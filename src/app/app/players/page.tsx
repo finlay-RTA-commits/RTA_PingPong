@@ -22,6 +22,16 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
@@ -38,9 +48,14 @@ import { usePlayers } from '@/hooks/use-players';
 
 export default function PlayersPage() {
   const { players, addPlayer, updatePlayer, removePlayer } = usePlayers();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  const [actionToConfirm, setActionToConfirm] = useState<{ type: 'edit' | 'delete', player: Player } | null>(null);
+  const [password, setPassword] = useState('');
   const { toast } = useToast();
+
+  const ADMIN_PASSWORD = 'rtapingpong1';
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -54,49 +69,69 @@ export default function PlayersPage() {
     }
 
     if (editingPlayer) {
-      // Edit existing player
       updatePlayer({ ...editingPlayer, name, avatar });
       toast({ title: 'Player Updated', description: `${name} has been updated.` });
     } else {
-      // Add new player
       addPlayer(name, avatar);
       toast({ title: 'Player Added', description: `${name} has been added to the roster.` });
     }
 
     setEditingPlayer(null);
-    setIsDialogOpen(false);
+    setIsFormDialogOpen(false);
   };
 
-  const handleEditClick = (player: Player) => {
-    setEditingPlayer(player);
-    setIsDialogOpen(true);
+  const handleEditRequest = (player: Player) => {
+    setActionToConfirm({ type: 'edit', player });
+    setIsAuthDialogOpen(true);
   };
-  
+
+  const handleDeleteRequest = (player: Player) => {
+    setActionToConfirm({ type: 'delete', player });
+    setIsAuthDialogOpen(true);
+  };
+
+  const handlePasswordConfirm = () => {
+    if (password !== ADMIN_PASSWORD) {
+      toast({ variant: 'destructive', title: 'Authentication Failed', description: 'Incorrect password.' });
+      return;
+    }
+
+    if (actionToConfirm?.type === 'edit') {
+      setEditingPlayer(actionToConfirm.player);
+      setIsFormDialogOpen(true);
+    } else if (actionToConfirm?.type === 'delete') {
+      removePlayer(actionToConfirm.player.id);
+      toast({ title: 'Player Removed', description: `${actionToConfirm.player.name} has been removed.` });
+    }
+
+    handleAuthDialogClose();
+  };
+
+  const handleAuthDialogClose = () => {
+    setIsAuthDialogOpen(false);
+    setActionToConfirm(null);
+    setPassword('');
+  };
+
   const handleAddNewClick = () => {
     setEditingPlayer(null);
-    setIsDialogOpen(true);
-  }
-
-  const handleDeleteClick = (playerId: number) => {
-    const playerToDelete = players.find(p => p.id === playerId);
-    removePlayer(playerId);
-    toast({ title: 'Player Removed', description: `${playerToDelete?.name} has been removed.` });
+    setIsFormDialogOpen(true);
   };
 
   return (
     <div className="space-y-6">
-       <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Manage Players</h1>
           <p className="text-muted-foreground">
             Add, edit, or remove players from the roster.
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
-            setIsDialogOpen(isOpen);
-            if (!isOpen) {
-                setEditingPlayer(null);
-            }
+        <Dialog open={isFormDialogOpen} onOpenChange={(isOpen) => {
+          setIsFormDialogOpen(isOpen);
+          if (!isOpen) {
+            setEditingPlayer(null);
+          }
         }}>
           <DialogTrigger asChild>
             <Button onClick={handleAddNewClick}>
@@ -125,8 +160,8 @@ export default function PlayersPage() {
                 </div>
               </div>
               <DialogFooter>
-                 <DialogClose asChild>
-                   <Button type="button" variant="secondary" onClick={() => setEditingPlayer(null)}>Cancel</Button>
+                <DialogClose asChild>
+                  <Button type="button" variant="secondary" onClick={() => setEditingPlayer(null)}>Cancel</Button>
                 </DialogClose>
                 <Button type="submit">{editingPlayer ? 'Save Changes' : 'Add Player'}</Button>
               </DialogFooter>
@@ -169,11 +204,11 @@ export default function PlayersPage() {
                     <TableCell className="text-center">{player.wins}</TableCell>
                     <TableCell className="text-center">{player.losses}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => handleEditClick(player)}>
+                      <Button variant="ghost" size="icon" onClick={() => handleEditRequest(player)}>
                         <Edit className="h-4 w-4" />
                         <span className="sr-only">Edit</span>
                       </Button>
-                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteClick(player.id)}>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteRequest(player)}>
                         <Trash2 className="h-4 w-4" />
                         <span className="sr-only">Delete</span>
                       </Button>
@@ -184,6 +219,31 @@ export default function PlayersPage() {
           </Table>
         </CardContent>
       </Card>
+      
+      <AlertDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Admin Authentication Required</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please enter the admin password to {actionToConfirm?.type} this player.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="admin-password">Password</Label>
+            <Input 
+              id="admin-password" 
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handlePasswordConfirm()}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleAuthDialogClose}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handlePasswordConfirm}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -110,6 +110,7 @@ export default function TournamentsPage() {
   const [isCreateOrEditOpen, setCreateOrEditOpen] = useState(false);
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
   const [selectedTournament, setSelectedTournament] = useState<Tournament & {enrolledPlayerIds: number[]} | null>(null);
+  const [coverImage, setCoverImage] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -117,7 +118,7 @@ export default function TournamentsPage() {
       const formData = new FormData(e.currentTarget);
       const name = formData.get('name') as string;
       const date = formData.get('date') as string;
-      const imageUrl = formData.get('imageUrl') as string || 'https://placehold.co/600x400.png';
+      const imageUrl = coverImage || 'https://placehold.co/600x400.png';
       
       if(!name || !date) {
         toast({variant: 'destructive', title: 'Error', description: 'Please fill out all fields.'});
@@ -143,6 +144,7 @@ export default function TournamentsPage() {
 
       setCreateOrEditOpen(false);
       setEditingTournament(null);
+      setCoverImage(null);
   }
 
   const handleDeleteTournament = (tournamentId: number) => {
@@ -152,6 +154,7 @@ export default function TournamentsPage() {
 
   const handleOpenEdit = (tournament: Tournament) => {
     setEditingTournament(tournament);
+    setCoverImage(tournament.imageUrl);
     setCreateOrEditOpen(true);
   }
 
@@ -172,6 +175,23 @@ export default function TournamentsPage() {
         return t;
      }));
   }
+
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && (file.type === 'image/jpeg' || file.type === 'image/png')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setCoverImage(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    } else {
+        toast({
+            variant: 'destructive',
+            title: 'Invalid File Type',
+            description: 'Please upload a JPG or PNG image.',
+        });
+    }
+  };
   
   const enrolledPlayers = selectedTournament ? players.filter(p => selectedTournament.enrolledPlayerIds.includes(p.id)) : [];
   const availablePlayers = selectedTournament ? players.filter(p => !selectedTournament.enrolledPlayerIds.includes(p.id)) : [];
@@ -190,6 +210,7 @@ export default function TournamentsPage() {
             setCreateOrEditOpen(isOpen);
             if (!isOpen) {
                 setEditingTournament(null);
+                setCoverImage(null);
             }
         }}>
           <DialogTrigger asChild>
@@ -216,8 +237,9 @@ export default function TournamentsPage() {
                   <Input id="date" name="date" type="date" required defaultValue={editingTournament?.date}/>
                 </div>
                  <div className="space-y-2">
-                  <Label htmlFor="imageUrl">Cover Image URL</Label>
-                  <Input id="imageUrl" name="imageUrl" placeholder="https://example.com/image.png" defaultValue={editingTournament?.imageUrl}/>
+                  <Label>Cover Image</Label>
+                  {coverImage && <Image src={coverImage} alt="Cover image preview" width={200} height={100} className="rounded-md object-cover" />}
+                   <Input id="imageUrl" name="imageUrl" type="file" accept="image/png, image/jpeg" onChange={handleCoverImageChange} />
                 </div>
               </div>
               <DialogFooter>
@@ -361,5 +383,3 @@ export default function TournamentsPage() {
     </div>
   );
 }
-
-    

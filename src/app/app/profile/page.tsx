@@ -67,12 +67,18 @@ export default function ProfilePage() {
   
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (file && (file.type === 'image/jpeg' || file.type === 'image/png')) {
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatar(reader.result as string);
       };
       reader.readAsDataURL(file);
+    } else {
+        toast({
+            variant: 'destructive',
+            title: 'Invalid File Type',
+            description: 'Please upload a JPG or PNG image.',
+        });
     }
   };
   
@@ -94,7 +100,7 @@ export default function ProfilePage() {
                 <AvatarImage src={avatar} alt={displayName} data-ai-hint="person portrait" />
                 <AvatarFallback className="text-3xl">{displayName[0]}</AvatarFallback>
               </Avatar>
-               <Input id="picture" type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+               <Input id="picture" type="file" accept="image/png, image/jpeg" onChange={handleAvatarChange} className="hidden" />
                <Button asChild variant="outline">
                  <Label htmlFor="picture">Change Avatar</Label>
                </Button>
