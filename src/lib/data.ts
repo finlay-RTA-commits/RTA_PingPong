@@ -13,16 +13,16 @@ export const players: Player[] = [
 ];
 
 export const games: Game[] = [
-  { id: 1, player1: players[0], player2: players[2], score1: 11, score2: 5, date: '2024-07-20' },
-  { id: 2, player1: players[1], player2: players[3], score1: 7, score2: 11, date: '2024-07-20' },
-  { id: 3, player1: players[4], player2: players[5], score1: 11, score2: 9, date: '2024-07-19' },
-  { id: 4, player1: players[6], player2: players[7], score1: 2, score2: 11, date: '2024-07-19' },
-  { id: 5, player1: players[0], player2: players[1], score1: 11, score2: 8, date: '2024-07-18' },
+  { id: 1, player1: players[0], player2: players[2], score1: 3, score2: 1, date: '2024-07-20' },
+  { id: 2, player1: players[1], player2: players[3], score1: 2, score2: 3, date: '2024-07-20' },
+  { id: 3, player1: players[4], player2: players[5], score1: 3, score2: 0, date: '2024-07-19' },
+  { id: 4, player1: players[6], player2: players[7], score1: 1, score2: 3, date: '2024-07-19' },
+  { id: 5, player1: players[0], player2: players[1], score1: 3, score2: 2, date: '2024-07-18' },
 ];
 
-export const tournaments: Tournament[] = [
-  { id: 1, name: 'Summer Slam 2024', date: '2024-08-01', participants: 32, imageUrl: 'https://placehold.co/600x400.png' },
-  { id: 2, name: 'Autumn Open', date: '2024-10-15', participants: 16, imageUrl: 'https://placehold.co/600x400.png' },
-  { id: 3, name: 'Winter Championship', date: '2024-12-05', participants: 24, imageUrl: 'https://placehold.co/600x400.png' },
-  { id: 4, name: 'New Year Cup', date: '2025-01-10', participants: 16, imageUrl: 'https://placehold.co/600x400.png' },
+export const tournaments: (Omit<Tournament, 'enrolledPlayerIds'>)[] = [
+  { id: 1, name: 'Summer Slam 2024', date: '2024-08-01', participants: 8, imageUrl: 'https://placehold.co/600x400.png' },
+  { id: 2, name: 'Autumn Open', date: '2024-10-15', participants: 4, imageUrl: 'https://placehold.co/600x400.png' },
+  { id: 3, name: 'Winter Championship', date: '2024-12-05', participants: 6, imageUrl: 'https://placehold.co/600x400.png' },
+  { id: 4, name: 'New Year Cup', date: '2025-01-10', participants: 8, imageUrl: 'https://placehold.co/600x400.png' },
 ];

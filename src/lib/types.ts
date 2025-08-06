@@ -33,6 +33,7 @@ export type Tournament = {
   date: string;
   participants: number;
   imageUrl: string;
+  enrolledPlayerIds: number[];
 };
 
 // === AI Flow Types ===
@@ -45,7 +46,7 @@ export type PredictMatchInput = z.infer<typeof PredictMatchInputSchema>;
 
 export const PredictMatchOutputSchema = z.object({
   winner: z.string().describe('The predicted winner of the match.'),
-  odds: z.string().describe("The American-style betting odds for the predicted winner (e.g., '-150', '+200')."),
+  odds: z.string().describe("The fractional style betting odds for the predicted winner (e.g., '5/2', '1/3')."),
   reasoning: z.string().describe('A brief explanation for the prediction.'),
 });
 export type PredictMatchOutput = z.infer<typeof PredictMatchOutputSchema>;
