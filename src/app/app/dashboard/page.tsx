@@ -120,9 +120,13 @@ export default function DashboardPage() {
             <TableBody>
               {players.slice(0, 5).map((player) => (
                 <TableRow key={player.id}>
-                  <TableCell className="text-center font-bold">
+                  <TableCell className="text-center font-bold text-lg">
                      {player.rank === 1 ? (
-                      <span className="inline-block -rotate-45 text-lg">👑</span>
+                      <span className="inline-block -rotate-[60deg]">👑</span>
+                    ) : player.rank === 2 ? (
+                      <span>🥈</span>
+                    ) : player.rank === 3 ? (
+                      <span>🥉</span>
                     ) : (
                       player.rank
                     )}
