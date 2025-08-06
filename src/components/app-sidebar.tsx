@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -18,6 +19,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "./ui/button";
+import { useAuth } from "@/hooks/use-auth";
 
 const menuItems = [
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -27,11 +29,11 @@ const menuItems = [
 
 const bottomMenuItems = [
   { href: "/app/profile", label: "My Profile", icon: User },
-  { href: "/", label: "Logout", icon: LogOut },
 ];
 
 export function AppSidebar({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { logout } = useAuth();
 
   const isActive = (href: string) => {
     return pathname === href;
@@ -86,6 +88,17 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
                 </Link>
               </SidebarMenuItem>
             ))}
+             <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={logout}
+                  tooltip="Logout"
+                >
+                  <a>
+                    <LogOut />
+                    <span>Logout</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
