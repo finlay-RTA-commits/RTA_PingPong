@@ -1,3 +1,4 @@
+
 export type Player = {
   id: number;
   name: string;
@@ -5,6 +6,13 @@ export type Player = {
   wins: number;
   losses: number;
   avatar: string;
+  stats?: PlayerStats;
+};
+
+export type PlayerStats = {
+  winStreak: number;
+  rival: string;
+  bestScore: string;
 };
 
 export type Game = {

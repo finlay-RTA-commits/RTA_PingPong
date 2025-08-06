@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, LogOut, Rocket, Swords, Trophy, User } from "lucide-react";
+import { LayoutDashboard, LogOut, Rocket, Swords, Trophy, User, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -25,6 +25,7 @@ const menuItems = [
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/app/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/app/tournaments", label: "Tournaments", icon: Swords },
+  { href: "/app/player-cards", label: "Player Cards", icon: Users },
 ];
 
 const bottomMenuItems = [
