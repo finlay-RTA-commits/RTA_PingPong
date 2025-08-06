@@ -38,7 +38,7 @@ export default function LeaderboardPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[80px]">Rank</TableHead>
+              <TableHead className="w-[80px] text-center">Rank</TableHead>
               <TableHead>Player</TableHead>
               <TableHead className="text-center">Wins</TableHead>
               <TableHead className="text-center">Losses</TableHead>
@@ -50,10 +50,12 @@ export default function LeaderboardPage() {
               .sort((a, b) => a.rank - b.rank)
               .map((player) => (
                 <TableRow key={player.id}>
-                  <TableCell>
-                    <Badge variant={player.rank === 1 ? 'default' : 'secondary'} className="text-lg">
-                      {player.rank === 1 ? '👑' : player.rank}
-                    </Badge>
+                  <TableCell className="w-[80px] text-center text-lg font-bold">
+                    {player.rank === 1 ? (
+                      <span className="inline-block -rotate-45">👑</span>
+                    ) : (
+                      player.rank
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
