@@ -1,3 +1,6 @@
+
+"use client";
+
 import { players, games, tournaments } from "@/lib/data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -24,68 +27,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trophy, Calendar } from "lucide-react";
+import { Trophy, Calendar, Plus } from "lucide-react";
 
 export default function DashboardPage() {
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-6">
-      {/* Log Game */}
-      <Card className="lg:col-span-4">
-        <CardHeader>
-          <CardTitle>Log a New Game</CardTitle>
-          <CardDescription>
-            Enter the details of a recent game to update the leaderboard.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-end">
-            <div className="space-y-2">
-              <Label>Player 1</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Player 1" />
-                </SelectTrigger>
-                <SelectContent>
-                  {players.map((p) => (
-                    <SelectItem key={p.id} value={String(p.id)}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Score</Label>
-              <Input type="number" placeholder="Enter score" />
-            </div>
-            <div className="space-y-2">
-              <Label>Player 2</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Player 2" />
-                </SelectTrigger>
-                <SelectContent>
-                  {players.map((p) => (
-                    <SelectItem key={p.id} value={String(p.id)}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Score</Label>
-              <Input type="number" placeholder="Enter score" />
-            </div>
-            <Button className="w-full md:col-span-2">Submit Game</Button>
-          </form>
-        </CardContent>
-      </Card>
-
+    <>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       {/* Leaderboard Snippet */}
-      <Card className="lg:col-span-2">
+      <Card className="lg:col-span-1">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trophy className="text-primary" />
@@ -114,9 +73,32 @@ export default function DashboardPage() {
           </Table>
         </CardContent>
       </Card>
+      
+      {/* Upcoming Tournaments */}
+       <Card className="lg:col-span-2">
+        <CardHeader>
+          <CardTitle>Upcoming Tournaments</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {tournaments.slice(0, 2).map((tournament) => (
+              <div key={tournament.id} className="flex items-center justify-between rounded-lg border p-4">
+                <div>
+                    <h3 className="font-semibold">{tournament.name}</h3>
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        {tournament.date}
+                    </p>
+                </div>
+                <Button variant="secondary">View Details</Button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Recent Games */}
-      <Card className="lg:col-span-6">
+      <Card className="lg:col-span-3">
         <CardHeader>
           <CardTitle>Recent Games</CardTitle>
         </CardHeader>
@@ -158,28 +140,66 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
       
-      {/* Upcoming Tournaments */}
-       <Card className="lg:col-span-6">
-        <CardHeader>
-          <CardTitle>Upcoming Tournaments</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {tournaments.slice(0, 2).map((tournament) => (
-              <div key={tournament.id} className="flex items-center justify-between rounded-lg border p-4">
-                <div>
-                    <h3 className="font-semibold">{tournament.name}</h3>
-                    <p className="text-sm text-muted-foreground flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        {tournament.date}
-                    </p>
-                </div>
-                <Button variant="secondary">View Details</Button>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
+    <Sheet>
+        <SheetTrigger asChild>
+            <Button className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg" size="icon">
+                <Plus className="h-8 w-8" />
+                <span className="sr-only">Log a new game</span>
+            </Button>
+        </SheetTrigger>
+        <SheetContent>
+            <SheetHeader>
+                <SheetTitle>Log a New Game</SheetTitle>
+                <SheetDescription>
+                    Enter the details of a recent game to update the leaderboard.
+                </SheetDescription>
+            </SheetHeader>
+            <div className="py-4">
+                 <form className="grid grid-cols-1 gap-6">
+                    <div className="space-y-2">
+                      <Label>Player 1</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Player 1" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {players.map((p) => (
+                            <SelectItem key={p.id} value={String(p.id)}>
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Score</Label>
+                      <Input type="number" placeholder="Enter score" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Player 2</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Player 2" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {players.map((p) => (
+                            <SelectItem key={p.id} value={String(p.id)}>
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Score</Label>
+                      <Input type="number" placeholder="Enter score" />
+                    </div>
+                    <Button type="submit" className="w-full">Submit Game</Button>
+                </form>
+            </div>
+        </SheetContent>
+    </Sheet>
+    </>
   );
 }
