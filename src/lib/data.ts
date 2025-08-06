@@ -2,8 +2,8 @@
 import type { Player, Game, Tournament } from './types';
 
 export const players: Player[] = [
-  { id: 1, name: 'Alice', rank: 1, wins: 15, losses: 2, avatar: 'https://placehold.co/40x40.png', stats: { winStreak: 5, rival: 'Bob', bestScore: '11-2' } },
-  { id: 2, name: 'Bob', rank: 2, wins: 13, losses: 4, avatar: 'https://placehold.co/40x40.png', stats: { winStreak: 2, rival: 'Alice', bestScore: '11-4' } },
+  { id: 1, name: 'Alice', rank: 1, wins: 15, losses: 2, avatar: 'https://placehold.co/40x40.png', stats: { winStreak: 5, rival: 'Bob', bestScore: '11-2' }, tournamentsWon: 2 },
+  { id: 2, name: 'Bob', rank: 2, wins: 13, losses: 4, avatar: 'https://placehold.co/40x40.png', stats: { winStreak: 2, rival: 'Alice', bestScore: '11-4' }, tournamentsWon: 1 },
   { id: 3, name: 'Charlie', rank: 3, wins: 12, losses: 5, avatar: 'https://placehold.co/40x40.png', stats: { winStreak: 0, rival: 'Diana', bestScore: '11-5' } },
   { id: 4, name: 'Diana', rank: 4, wins: 10, losses: 7, avatar: 'https://placehold.co/40x40.png', stats: { winStreak: 3, rival: 'Charlie', bestScore: '11-6' } },
   { id: 5, name: 'Ethan', rank: 5, wins: 9, losses: 8, avatar: 'https://placehold.co/40x40.png', stats: { winStreak: 1, rival: 'Fiona', bestScore: '11-7' } },

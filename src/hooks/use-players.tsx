@@ -36,7 +36,8 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
           winStreak: 0,
           rival: 'N/A',
           bestScore: 'N/A'
-      }
+      },
+      tournamentsWon: 0,
     };
     setPlayers(prevPlayers => reRankPlayers([...prevPlayers, newPlayer]));
   };

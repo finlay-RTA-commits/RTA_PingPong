@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { Player } from '@/lib/types';
-import { BarChart, Flame, Shield, Star, Swords, TrendingDown, TrendingUp } from 'lucide-react';
+import { BarChart, Flame, Shield, Star, Swords, TrendingDown, TrendingUp, Trophy } from 'lucide-react';
 
 interface PlayerCardProps {
   player: Player;
@@ -22,7 +22,12 @@ export function PlayerCard({ player }: PlayerCardProps) {
               <AvatarFallback className="text-3xl">{player.name[0]}</AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle className="text-2xl font-bold text-primary">{player.name}</CardTitle>
+              <CardTitle className="text-2xl font-bold text-primary flex items-center gap-2">
+                {player.name}
+                {player.tournamentsWon && player.tournamentsWon > 0 && (
+                  <Trophy className="h-6 w-6 text-amber-400" />
+                )}
+              </CardTitle>
               <p className="font-semibold text-muted-foreground">Rank: #{player.rank}</p>
             </div>
           </div>

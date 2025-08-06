@@ -51,8 +51,8 @@ export default function LeaderboardPage() {
               .map((player) => (
                 <TableRow key={player.id}>
                   <TableCell>
-                    <Badge variant="secondary" className="text-lg">
-                      {player.rank}
+                    <Badge variant={player.rank === 1 ? 'default' : 'secondary'} className="text-lg">
+                      {player.rank === 1 ? '👑' : player.rank}
                     </Badge>
                   </TableCell>
                   <TableCell>

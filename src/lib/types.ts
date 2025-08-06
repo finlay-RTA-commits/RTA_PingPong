@@ -9,6 +9,7 @@ export type Player = {
   losses: number;
   avatar: string;
   stats?: PlayerStats;
+  tournamentsWon?: number;
 };
 
 export type PlayerStats = {
