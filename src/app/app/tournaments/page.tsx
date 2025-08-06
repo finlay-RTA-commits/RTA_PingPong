@@ -1,9 +1,10 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from "next/image";
-import { tournaments as initialTournaments } from "@/lib/data";
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -32,7 +33,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
   Select,
@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar, PlusCircle, Users, GitMerge, Edit, Trash2, UserPlus, UserX, Image as ImageIcon } from "lucide-react";
+import { Calendar, PlusCircle, Users, GitMerge, Edit, Trash2, UserX } from "lucide-react";
 import type { Tournament, Player } from '@/lib/types';
 import { usePlayers } from '@/hooks/use-players';
 import { useToast } from '@/hooks/use-toast';
@@ -61,12 +61,10 @@ const generateBracket = (participants: Player[]): BracketRound[] => {
     let currentRoundPlayers = [...participants];
     let roundNumber = 1;
 
-    // Pad with byes if not a power of 2
     const idealSize = Math.pow(2, Math.ceil(Math.log2(currentRoundPlayers.length)));
     while (currentRoundPlayers.length < idealSize) {
         currentRoundPlayers.push(null!);
     }
-     // Shuffle players for random seeding
     for (let i = currentRoundPlayers.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [currentRoundPlayers[i], currentRoundPlayers[j]] = [currentRoundPlayers[j], currentRoundPlayers[i]];
@@ -84,12 +82,10 @@ const generateBracket = (participants: Player[]): BracketRound[] => {
             const player1 = currentRoundPlayers[i];
             const player2 = i + 1 < currentRoundPlayers.length ? currentRoundPlayers[i+1] : null;
             round.seeds.push([player1, player2]);
-            // For this simulation, we'll just advance the first player of the pair if both exist
             nextRoundPlayers.push(player1);
         }
         
         bracket.push(round);
-        // This is a placeholder for advancing logic. 
         currentRoundPlayers = nextRoundPlayers.filter(p => p !== null); 
         roundNumber++;
     }
@@ -106,14 +102,25 @@ const generateBracket = (participants: Player[]): BracketRound[] => {
 
 export default function TournamentsPage() {
   const { players } = usePlayers();
-  const [tournaments, setTournaments] = useState(initialTournaments.map(t => ({...t, enrolledPlayerIds: players.slice(0, t.participants).map(p => p.id)})));
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [isCreateOrEditOpen, setCreateOrEditOpen] = useState(false);
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
-  const [selectedTournament, setSelectedTournament] = useState<Tournament & {enrolledPlayerIds: number[]} | null>(null);
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "tournaments"), (snapshot) => {
+        const tournamentsData: Tournament[] = [];
+        snapshot.forEach(doc => tournamentsData.push({ id: doc.id, ...doc.data() } as Tournament));
+        setTournaments(tournamentsData);
+        setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       const formData = new FormData(e.currentTarget);
       const name = formData.get('name') as string;
@@ -126,19 +133,17 @@ export default function TournamentsPage() {
       }
       
       if (editingTournament) {
-        setTournaments(tournaments.map(t => t.id === editingTournament.id ? {...t, name, date, imageUrl} : t));
+        const tournamentDoc = doc(db, "tournaments", editingTournament.id);
+        await updateDoc(tournamentDoc, { name, date, imageUrl });
         toast({ title: 'Tournament Updated', description: `${name} has been updated.` });
-
       } else {
-        const newTournament: Tournament & {enrolledPlayerIds: number[]} = {
-            id: Math.max(...tournaments.map(t => t.id), 0) + 1,
+        await addDoc(collection(db, "tournaments"), {
             name,
             date,
-            participants: 0,
             imageUrl,
+            participants: 0,
             enrolledPlayerIds: []
-        };
-        setTournaments([newTournament, ...tournaments]);
+        });
         toast({ title: 'Tournament Created', description: `${name} has been created.` });
       }
 
@@ -147,8 +152,8 @@ export default function TournamentsPage() {
       setCoverImage(null);
   }
 
-  const handleDeleteTournament = (tournamentId: number) => {
-    setTournaments(tournaments.filter(t => t.id !== tournamentId));
+  const handleDeleteTournament = async (tournamentId: string) => {
+    await deleteDoc(doc(db, "tournaments", tournamentId));
     toast({ title: 'Tournament Deleted', description: 'The tournament has been removed.' });
   }
 
@@ -158,22 +163,25 @@ export default function TournamentsPage() {
     setCreateOrEditOpen(true);
   }
 
-  const handleAddPlayer = (tournamentId: number, playerId: number) => {
-     setTournaments(tournaments.map(t => {
-        if (t.id === tournamentId && !t.enrolledPlayerIds.includes(playerId)) {
-            return {...t, enrolledPlayerIds: [...t.enrolledPlayerIds, playerId], participants: t.participants + 1 };
-        }
-        return t;
-     }));
+  const updateTournamentPlayers = async (tournamentId: string, newPlayerIds: string[]) => {
+      const tournamentDoc = doc(db, "tournaments", tournamentId);
+      await updateDoc(tournamentDoc, { enrolledPlayerIds: newPlayerIds, participants: newPlayerIds.length });
   }
 
-  const handleRemovePlayer = (tournamentId: number, playerId: number) => {
-      setTournaments(tournaments.map(t => {
-        if (t.id === tournamentId) {
-            return {...t, enrolledPlayerIds: t.enrolledPlayerIds.filter(id => id !== playerId), participants: t.participants -1 };
-        }
-        return t;
-     }));
+  const handleAddPlayer = (tournamentId: string, playerId: string) => {
+     const tournament = tournaments.find(t => t.id === tournamentId);
+     if (tournament && !tournament.enrolledPlayerIds.includes(playerId)) {
+         const newPlayerIds = [...tournament.enrolledPlayerIds, playerId];
+         updateTournamentPlayers(tournamentId, newPlayerIds);
+     }
+  }
+
+  const handleRemovePlayer = (tournamentId: string, playerId: string) => {
+     const tournament = tournaments.find(t => t.id === tournamentId);
+     if (tournament) {
+         const newPlayerIds = tournament.enrolledPlayerIds.filter(id => id !== playerId);
+         updateTournamentPlayers(tournamentId, newPlayerIds);
+     }
   }
 
   const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -319,12 +327,12 @@ export default function TournamentsPage() {
                        <div className="flex flex-col gap-4 border-r pr-6">
                            <h3 className="font-semibold text-lg">Participants ({enrolledPlayers.length})</h3>
                            <div className="flex gap-2">
-                                <Select onValueChange={(playerId) => handleAddPlayer(selectedTournament!.id, parseInt(playerId))}>
+                                <Select onValueChange={(playerId) => handleAddPlayer(selectedTournament!.id, playerId)}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Add Player" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {availablePlayers.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
+                                        {availablePlayers.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                            </div>

@@ -26,38 +26,39 @@ export default function ProfilePage() {
   const { toast } = useToast();
   
   const [currentUserStats, setCurrentUserStats] = useState<Player | null>(null);
-  const [displayName, setDisplayName] = useState(user?.displayName || 'New Player');
-  const [avatar, setAvatar] = useState(user?.photoURL || 'https://placehold.co/80x80.png');
+  const [displayName, setDisplayName] = useState('');
+  const [avatar, setAvatar] = useState('https://placehold.co/80x80.png');
 
   useEffect(() => {
     if (user) {
-      // Find the player associated with the logged-in user.
-      // In a real app, you'd match on a persistent user ID from the database, not email.
-      const player = players.find(p => p.name.toLowerCase() === (user.displayName || '').toLowerCase() || p.id === (user as any).playerId);
-      setCurrentUserStats(player || null);
-      if(player){
+      // Find the player associated with the logged-in user's UID.
+      const player = players.find(p => p.uid === user.uid);
+      if (player) {
+        setCurrentUserStats(player);
         setDisplayName(player.name);
         setAvatar(player.avatar);
+      } else {
+        // If no player found, set defaults from auth profile
+        setDisplayName(user.displayName || 'New Player');
+        setAvatar(user.photoURL || 'https://placehold.co/80x80.png');
+        setCurrentUserStats(null);
       }
     }
   }, [user, players]);
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if(!user) return;
     
     if (currentUserStats) {
       // Update existing player
-      updatePlayer({ ...currentUserStats, name: displayName, avatar });
+      await updatePlayer({ ...currentUserStats, name: displayName, avatar });
       toast({
         title: "Profile Updated",
         description: "Your changes have been saved.",
       });
     } else {
-       // Add new player - In a real app, this ID would come from a database.
-      const newPlayerId = Math.max(...players.map(p => p.id), 0) + 1;
-      // Associate Firebase user with player id
-      (user as any).playerId = newPlayerId;
-      addPlayer(displayName, avatar, newPlayerId);
+       // Add new player, linking with Firebase Auth UID
+      await addPlayer(displayName, avatar, user.uid);
       toast({
         title: "Profile Created",
         description: "You are now on the player roster!",
@@ -98,7 +99,7 @@ export default function ProfilePage() {
             <div className="flex items-center gap-4">
               <Avatar className="h-20 w-20">
                 <AvatarImage src={avatar} alt={displayName} data-ai-hint="person portrait" />
-                <AvatarFallback className="text-3xl">{displayName[0]}</AvatarFallback>
+                <AvatarFallback className="text-3xl">{displayName?.[0]}</AvatarFallback>
               </Avatar>
                <Input id="picture" type="file" accept="image/png, image/jpeg" onChange={handleAvatarChange} className="hidden" />
                <Button asChild variant="outline">

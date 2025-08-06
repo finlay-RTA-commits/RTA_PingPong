@@ -2,7 +2,6 @@
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -47,7 +46,6 @@ export default function LeaderboardPage() {
           </TableHeader>
           <TableBody>
             {players
-              .sort((a, b) => a.rank - b.rank)
               .map((player) => (
                 <TableRow key={player.id}>
                   <TableCell className="w-[80px] text-center text-lg font-bold">

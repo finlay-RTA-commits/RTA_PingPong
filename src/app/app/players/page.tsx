@@ -57,7 +57,7 @@ export default function PlayersPage() {
 
   const ADMIN_PASSWORD = 'rtapingpong1';
 
-  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
@@ -69,10 +69,10 @@ export default function PlayersPage() {
     }
 
     if (editingPlayer) {
-      updatePlayer({ ...editingPlayer, name, avatar });
+      await updatePlayer({ ...editingPlayer, name, avatar });
       toast({ title: 'Player Updated', description: `${name} has been updated.` });
     } else {
-      addPlayer(name, avatar);
+      await addPlayer(name, avatar);
       toast({ title: 'Player Added', description: `${name} has been added to the roster.` });
     }
 
@@ -90,7 +90,7 @@ export default function PlayersPage() {
     setIsAuthDialogOpen(true);
   };
 
-  const handlePasswordConfirm = () => {
+  const handlePasswordConfirm = async () => {
     if (password !== ADMIN_PASSWORD) {
       toast({ variant: 'destructive', title: 'Authentication Failed', description: 'Incorrect password.' });
       return;
@@ -100,7 +100,7 @@ export default function PlayersPage() {
       setEditingPlayer(actionToConfirm.player);
       setIsFormDialogOpen(true);
     } else if (actionToConfirm?.type === 'delete') {
-      removePlayer(actionToConfirm.player.id);
+      await removePlayer(actionToConfirm.player.id);
       toast({ title: 'Player Removed', description: `${actionToConfirm.player.name} has been removed.` });
     }
 
@@ -189,7 +189,6 @@ export default function PlayersPage() {
             </TableHeader>
             <TableBody>
               {players
-                .sort((a, b) => a.rank - b.rank)
                 .map((player) => (
                   <TableRow key={player.id}>
                     <TableCell>

@@ -57,7 +57,7 @@ export default function DashboardPage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleLogGame = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLogGame = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const player1Id = formData.get('player1') as string;
@@ -76,26 +76,28 @@ export default function DashboardPage() {
         return;
     }
 
-    const player1 = players.find(p => p.id === parseInt(player1Id));
-    const player2 = players.find(p => p.id === parseInt(player2Id));
+    const player1 = players.find(p => p.id === player1Id);
+    const player2 = players.find(p => p.id === player2Id);
 
     if (!player1 || !player2) {
       toast({ variant: 'destructive', title: 'Error', description: 'Could not find selected players.' });
       return;
     }
 
+    // This will now update Firestore
+    await updatePlayerStats(player1Id, player2Id, score1, score2);
+    
+    // Game logging to Firestore would be a good next step. 
+    // For now, just updating local state for display.
     const newGame: Game = {
-      id: games.length + 1,
+      id: String(games.length + 1),
       player1,
       player2,
       score1,
       score2,
       date: new Date().toISOString().split('T')[0],
-      tournamentId: tournamentIdStr && tournamentIdStr !== 'exhibition' ? parseInt(tournamentIdStr) : undefined
+      tournamentId: tournamentIdStr && tournamentIdStr !== 'exhibition' ? tournamentIdStr : undefined
     };
-    
-    updatePlayerStats(parseInt(player1Id), score1, score2);
-    updatePlayerStats(parseInt(player2Id), score2, score1);
 
     setGames([newGame, ...games]);
     

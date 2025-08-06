@@ -2,7 +2,8 @@
 import { z } from 'zod';
 
 export type Player = {
-  id: number;
+  id: string; // Firestore document ID
+  uid?: string; // Firebase Auth User ID
   name: string;
   rank: number;
   wins: number;
@@ -19,22 +20,22 @@ export type PlayerStats = {
 };
 
 export type Game = {
-  id: number;
+  id: string; // Firestore document ID
   player1: Player;
   player2: Player;
   score1: number;
   score2: number;
   date: string;
-  tournamentId?: number;
+  tournamentId?: string;
 };
 
 export type Tournament = {
-  id: number;
+  id: string; // Firestore document ID
   name: string;
   date: string;
   participants: number;
   imageUrl: string;
-  enrolledPlayerIds: number[];
+  enrolledPlayerIds: string[];
 };
 
 // === AI Flow Types ===
