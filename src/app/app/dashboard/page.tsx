@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from 'react';
-import { players as initialPlayers, games as initialGames, tournaments } from "@/lib/data";
+import { games as initialGames, tournaments } from "@/lib/data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,9 +41,10 @@ import { Label } from "@/components/ui/label";
 import { Trophy, Calendar, Plus } from "lucide-react";
 import type { Player, Game } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { usePlayers } from '@/hooks/use-players';
 
 export default function DashboardPage() {
-  const [players, setPlayers] = useState<Player[]>(initialPlayers);
+  const { players, updatePlayerStats } = usePlayers();
   const [games, setGames] = useState<Game[]>(initialGames);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const { toast } = useToast();
@@ -84,20 +85,11 @@ export default function DashboardPage() {
       date: new Date().toISOString().split('T')[0],
       tournamentId: tournamentIdStr && tournamentIdStr !== 'exhibition' ? parseInt(tournamentIdStr) : undefined
     };
-
-    const updatedPlayers = players.map(p => {
-        if (p.id === player1.id) {
-            return { ...p, wins: score1 > score2 ? p.wins + 1 : p.wins, losses: score1 < score2 ? p.losses + 1 : p.losses };
-        }
-        if (p.id === player2.id) {
-            return { ...p, wins: score2 > score1 ? p.wins + 1 : p.wins, losses: score2 < score1 ? p.losses + 1 : p.losses };
-        }
-        return p;
-    }).sort((a,b) => b.wins - a.wins).map((p, index) => ({...p, rank: index + 1}));
-
+    
+    updatePlayerStats(parseInt(player1Id), score1, score2);
+    updatePlayerStats(parseInt(player2Id), score2, score1);
 
     setGames([newGame, ...games]);
-    setPlayers(updatedPlayers);
     
     setIsSheetOpen(false);
 

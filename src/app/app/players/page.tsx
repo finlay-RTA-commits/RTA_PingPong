@@ -2,7 +2,6 @@
 'use client';
 
 import { useState } from 'react';
-import { players as initialPlayers } from '@/lib/data';
 import type { Player } from '@/lib/types';
 import {
   Table,
@@ -35,9 +34,10 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { usePlayers } from '@/hooks/use-players';
 
 export default function PlayersPage() {
-  const [players, setPlayers] = useState<Player[]>(initialPlayers);
+  const { players, addPlayer, updatePlayer, removePlayer } = usePlayers();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const { toast } = useToast();
@@ -55,22 +55,11 @@ export default function PlayersPage() {
 
     if (editingPlayer) {
       // Edit existing player
-      const updatedPlayers = players.map((p) =>
-        p.id === editingPlayer.id ? { ...p, name, avatar } : p
-      );
-      setPlayers(updatedPlayers);
+      updatePlayer({ ...editingPlayer, name, avatar });
       toast({ title: 'Player Updated', description: `${name} has been updated.` });
     } else {
       // Add new player
-      const newPlayer: Player = {
-        id: Math.max(...players.map(p => p.id), 0) + 1,
-        name,
-        avatar,
-        rank: players.length + 1,
-        wins: 0,
-        losses: 0,
-      };
-      setPlayers([...players, newPlayer]);
+      addPlayer(name, avatar);
       toast({ title: 'Player Added', description: `${name} has been added to the roster.` });
     }
 
@@ -90,7 +79,7 @@ export default function PlayersPage() {
 
   const handleDeleteClick = (playerId: number) => {
     const playerToDelete = players.find(p => p.id === playerId);
-    setPlayers(players.filter((p) => p.id !== playerId));
+    removePlayer(playerId);
     toast({ title: 'Player Removed', description: `${playerToDelete?.name} has been removed.` });
   };
 
@@ -103,7 +92,12 @@ export default function PlayersPage() {
             Add, edit, or remove players from the roster.
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
+            setIsDialogOpen(isOpen);
+            if (!isOpen) {
+                setEditingPlayer(null);
+            }
+        }}>
           <DialogTrigger asChild>
             <Button onClick={handleAddNewClick}>
               <PlusCircle className="mr-2 h-4 w-4" />

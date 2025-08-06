@@ -1,4 +1,6 @@
-import { players } from "@/lib/data";
+
+"use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,8 +19,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Trophy } from "lucide-react";
+import { usePlayers } from "@/hooks/use-players";
 
 export default function LeaderboardPage() {
+  const { players } = usePlayers();
   return (
     <Card>
       <CardHeader>

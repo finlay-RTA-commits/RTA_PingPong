@@ -2,8 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { players } from '@/lib/data';
-import type { Player, PredictMatchInput, PredictMatchOutput } from '@/lib/types';
+import type { PredictMatchInput, PredictMatchOutput } from '@/lib/types';
 import { PlayerCard } from '@/components/player-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,8 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, BrainCircuit } from 'lucide-react';
 import { predictMatch } from '@/ai/flows/predict-match-flow';
 import { useToast } from '@/hooks/use-toast';
+import { usePlayers } from '@/hooks/use-players';
 
 export default function PlayerCardsPage() {
+  const { players } = usePlayers();
   const [player1, setPlayer1] = useState<string | undefined>(undefined);
   const [player2, setPlayer2] = useState<string | undefined>(undefined);
   const [prediction, setPrediction] = useState<PredictMatchOutput | null>(null);

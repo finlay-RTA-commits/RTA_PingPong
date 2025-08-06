@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PlayerProvider } from '@/hooks/use-players';
 
 export default function AppPagesLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -31,5 +32,9 @@ export default function AppPagesLayout({ children }: { children: React.ReactNode
     )
   }
 
-  return <AppSidebar>{children}</AppSidebar>;
+  return (
+    <PlayerProvider>
+        <AppSidebar>{children}</AppSidebar>
+    </PlayerProvider>
+  );
 }
