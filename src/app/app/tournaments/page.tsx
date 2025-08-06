@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar, PlusCircle, Users, GitMerge, Edit, Trash2, UserPlus, UserX } from "lucide-react";
+import { Calendar, PlusCircle, Users, GitMerge, Edit, Trash2, UserPlus, UserX, Image as ImageIcon } from "lucide-react";
 import type { Tournament, Player } from '@/lib/types';
 import { usePlayers } from '@/hooks/use-players';
 import { useToast } from '@/hooks/use-toast';
@@ -117,6 +117,7 @@ export default function TournamentsPage() {
       const formData = new FormData(e.currentTarget);
       const name = formData.get('name') as string;
       const date = formData.get('date') as string;
+      const imageUrl = formData.get('imageUrl') as string || 'https://placehold.co/600x400.png';
       
       if(!name || !date) {
         toast({variant: 'destructive', title: 'Error', description: 'Please fill out all fields.'});
@@ -124,7 +125,7 @@ export default function TournamentsPage() {
       }
       
       if (editingTournament) {
-        setTournaments(tournaments.map(t => t.id === editingTournament.id ? {...t, name, date} : t));
+        setTournaments(tournaments.map(t => t.id === editingTournament.id ? {...t, name, date, imageUrl} : t));
         toast({ title: 'Tournament Updated', description: `${name} has been updated.` });
 
       } else {
@@ -133,7 +134,7 @@ export default function TournamentsPage() {
             name,
             date,
             participants: 0,
-            imageUrl: `https://placehold.co/600x400.png`,
+            imageUrl,
             enrolledPlayerIds: []
         };
         setTournaments([newTournament, ...tournaments]);
@@ -213,6 +214,10 @@ export default function TournamentsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="date">Start Date</Label>
                   <Input id="date" name="date" type="date" required defaultValue={editingTournament?.date}/>
+                </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="imageUrl">Cover Image URL</Label>
+                  <Input id="imageUrl" name="imageUrl" placeholder="https://example.com/image.png" defaultValue={editingTournament?.imageUrl}/>
                 </div>
               </div>
               <DialogFooter>
@@ -356,3 +361,5 @@ export default function TournamentsPage() {
     </div>
   );
 }
+
+    
