@@ -1,7 +1,8 @@
 
 "use client";
 
-import { players, games, tournaments } from "@/lib/data";
+import { useState } from 'react';
+import { players as initialPlayers, games as initialGames, tournaments } from "@/lib/data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,12 +39,75 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Trophy, Calendar, Plus } from "lucide-react";
+import type { Player, Game } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 export default function DashboardPage() {
+  const [players, setPlayers] = useState<Player[]>(initialPlayers);
+  const [games, setGames] = useState<Game[]>(initialGames);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleLogGame = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const player1Id = formData.get('player1') as string;
+    const player2Id = formData.get('player2') as string;
+    const score1 = parseInt(formData.get('score1') as string, 10);
+    const score2 = parseInt(formData.get('score2') as string, 10);
+    const tournamentId = formData.get('tournament') as string;
+
+    if (!player1Id || !player2Id || isNaN(score1) || isNaN(score2)) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Please fill out all fields correctly.' });
+      return;
+    }
+    
+    if (player1Id === player2Id) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Players cannot play against themselves.' });
+        return;
+    }
+
+    const player1 = players.find(p => p.id === parseInt(player1Id));
+    const player2 = players.find(p => p.id === parseInt(player2Id));
+
+    if (!player1 || !player2) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not find selected players.' });
+      return;
+    }
+
+    const newGame: Game = {
+      id: games.length + 1,
+      player1,
+      player2,
+      score1,
+      score2,
+      date: new Date().toISOString().split('T')[0],
+      tournamentId: tournamentId ? parseInt(tournamentId) : undefined
+    };
+
+    const updatedPlayers = players.map(p => {
+        if (p.id === player1.id) {
+            return { ...p, wins: score1 > score2 ? p.wins + 1 : p.wins, losses: score1 < score2 ? p.losses + 1 : p.losses };
+        }
+        if (p.id === player2.id) {
+            return { ...p, wins: score2 > score1 ? p.wins + 1 : p.wins, losses: score2 < score1 ? p.losses + 1 : p.losses };
+        }
+        return p;
+    }).sort((a,b) => b.wins - a.wins).map((p, index) => ({...p, rank: index + 1}));
+
+
+    setGames([newGame, ...games]);
+    setPlayers(updatedPlayers);
+    
+    setIsSheetOpen(false);
+
+    toast({ title: 'Game Logged', description: `${player1.name} vs ${player2.name} has been recorded.` });
+  };
+
+
   return (
     <>
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      {/* Leaderboard Snippet */}
       <Card className="lg:col-span-1">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -74,7 +138,6 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
       
-      {/* Upcoming Tournaments */}
        <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle>Upcoming Tournaments</CardTitle>
@@ -97,7 +160,6 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Recent Games */}
       <Card className="lg:col-span-3">
         <CardHeader>
           <CardTitle>Recent Games</CardTitle>
@@ -109,6 +171,7 @@ export default function DashboardPage() {
                 <TableHead>Player 1</TableHead>
                 <TableHead>Score</TableHead>
                 <TableHead>Player 2</TableHead>
+                <TableHead>Tournament</TableHead>
                 <TableHead className="text-right">Date</TableHead>
               </TableRow>
             </TableHeader>
@@ -132,6 +195,9 @@ export default function DashboardPage() {
                     <span>{game.player2.name}</span>
                      {game.score2 > game.score1 && <Badge variant="default" className="bg-primary/20 text-primary">WIN</Badge>}
                   </TableCell>
+                  <TableCell>
+                      {game.tournamentId ? tournaments.find(t=>t.id === game.tournamentId)?.name : 'Exhibition'}
+                  </TableCell>
                   <TableCell className="text-right">{game.date}</TableCell>
                 </TableRow>
               ))}
@@ -141,7 +207,7 @@ export default function DashboardPage() {
       </Card>
       
     </div>
-    <Sheet>
+    <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetTrigger asChild>
             <Button className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg" size="icon">
                 <Plus className="h-8 w-8" />
@@ -156,45 +222,68 @@ export default function DashboardPage() {
                 </SheetDescription>
             </SheetHeader>
             <div className="py-4">
-                 <form className="grid grid-cols-1 gap-6">
+                 <form className="grid grid-cols-1 gap-6" onSubmit={handleLogGame}>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Player 1</Label>
+                        <Select name="player1" required>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Player" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {players.map((p) => (
+                              <SelectItem key={p.id} value={String(p.id)}>
+                                {p.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Score</Label>
+                        <Input name="score1" type="number" placeholder="Games won" required min="0" max="3" />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Player 2</Label>
+                        <Select name="player2" required>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Player" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {players.map((p) => (
+                              <SelectItem key={p.id} value={String(p.id)}>
+                                {p.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Score</Label>
+                        <Input name="score2" type="number" placeholder="Games won" required min="0" max="3"/>
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
-                      <Label>Player 1</Label>
-                      <Select>
+                      <Label>Tournament (Optional)</Label>
+                      <Select name="tournament">
                         <SelectTrigger>
-                          <SelectValue placeholder="Select Player 1" />
+                          <SelectValue placeholder="Select Tournament" />
                         </SelectTrigger>
                         <SelectContent>
-                          {players.map((p) => (
-                            <SelectItem key={p.id} value={String(p.id)}>
-                              {p.name}
+                          <SelectItem value="">Exhibition Match</SelectItem>
+                          {tournaments.map((t) => (
+                            <SelectItem key={t.id} value={String(t.id)}>
+                              {t.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Score</Label>
-                      <Input type="number" placeholder="Enter score" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Player 2</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Player 2" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {players.map((p) => (
-                            <SelectItem key={p.id} value={String(p.id)}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Score</Label>
-                      <Input type="number" placeholder="Enter score" />
-                    </div>
+
                     <Button type="submit" className="w-full">Submit Game</Button>
                 </form>
             </div>

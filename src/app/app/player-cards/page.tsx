@@ -72,7 +72,7 @@ export default function PlayerCardsPage() {
             Match Predictor
           </CardTitle>
           <CardDescription>
-            Select two players to get an AI-powered match prediction.
+            Select two players to get AI-powered match prediction.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -107,7 +107,7 @@ export default function PlayerCardsPage() {
         {prediction && (
           <CardFooter className="flex flex-col items-start gap-2 rounded-lg border bg-muted/50 p-4">
               <h3 className="font-bold text-lg">Prediction Result</h3>
-              <p><strong className="text-primary">{prediction.winner}</strong> is predicted to win with a confidence of <strong className="text-primary">{Math.round(prediction.confidence * 100)}%</strong>.</p>
+              <p><strong className="text-primary">{prediction.winner}</strong> is predicted to win with odds of <strong className="text-primary">{prediction.odds}</strong>.</p>
               <p className="text-sm text-muted-foreground">{prediction.reasoning}</p>
           </CardFooter>
         )}

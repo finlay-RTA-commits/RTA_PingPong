@@ -24,6 +24,7 @@ export type Game = {
   score1: number;
   score2: number;
   date: string;
+  tournamentId?: number;
 };
 
 export type Tournament = {
@@ -44,7 +45,7 @@ export type PredictMatchInput = z.infer<typeof PredictMatchInputSchema>;
 
 export const PredictMatchOutputSchema = z.object({
   winner: z.string().describe('The predicted winner of the match.'),
-  confidence: z.number().describe('The confidence level of the prediction, from 0 to 1.'),
+  odds: z.string().describe("The American-style betting odds for the predicted winner (e.g., '-150', '+200')."),
   reasoning: z.string().describe('A brief explanation for the prediction.'),
 });
 export type PredictMatchOutput = z.infer<typeof PredictMatchOutputSchema>;

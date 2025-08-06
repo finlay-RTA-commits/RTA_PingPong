@@ -25,7 +25,7 @@ const prompt = ai.definePrompt({
   input: { schema: EnrichedPredictMatchInputSchema },
   output: { schema: PredictMatchOutputSchema },
   prompt: `
-    You are a sports analyst for a competitive ping pong league. Your task is to predict the outcome of a match between two players based on their stats.
+    You are a sports betting analyst for a competitive ping pong league. Your task is to predict the outcome of a match between two players and provide betting odds.
 
     Here are the players and their stats:
     {{#each players}}
@@ -40,7 +40,7 @@ const prompt = ai.definePrompt({
 
     Analyze the provided stats for the two players in the upcoming match: {{{player1Name}}} vs. {{{player2Name}}}.
 
-    Based on your analysis, predict a winner, estimate your confidence in the prediction (from 0.0 to 1.0), and provide a brief reasoning. Consider all factors, including rank, win/loss record, recent performance (win streak), and any rivalries.
+    Based on your analysis, predict a winner, provide the American-style betting odds (e.g., -150 for a favorite, +200 for an underdog), and give a brief reasoning for your prediction.
   `,
 });
 
