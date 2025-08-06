@@ -55,7 +55,7 @@ export default function DashboardPage() {
     const player2Id = formData.get('player2') as string;
     const score1 = parseInt(formData.get('score1') as string, 10);
     const score2 = parseInt(formData.get('score2') as string, 10);
-    const tournamentId = formData.get('tournament') as string;
+    const tournamentIdStr = formData.get('tournament') as string;
 
     if (!player1Id || !player2Id || isNaN(score1) || isNaN(score2)) {
       toast({ variant: 'destructive', title: 'Error', description: 'Please fill out all fields correctly.' });
@@ -82,7 +82,7 @@ export default function DashboardPage() {
       score1,
       score2,
       date: new Date().toISOString().split('T')[0],
-      tournamentId: tournamentId ? parseInt(tournamentId) : undefined
+      tournamentId: tournamentIdStr && tournamentIdStr !== 'exhibition' ? parseInt(tournamentIdStr) : undefined
     };
 
     const updatedPlayers = players.map(p => {
@@ -274,7 +274,7 @@ export default function DashboardPage() {
                           <SelectValue placeholder="Select Tournament" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Exhibition Match</SelectItem>
+                          <SelectItem value="exhibition">Exhibition Match</SelectItem>
                           {tournaments.map((t) => (
                             <SelectItem key={t.id} value={String(t.id)}>
                               {t.name}

@@ -40,7 +40,7 @@ const prompt = ai.definePrompt({
 
     Analyze the provided stats for the two players in the upcoming match: {{{player1Name}}} vs. {{{player2Name}}}.
 
-    Based on your analysis, predict a winner, provide the American-style betting odds (e.g., -150 for a favorite, +200 for an underdog), and give a brief reasoning for your prediction.
+    Based on your analysis, predict a winner, provide the fractional style betting odds, and give a brief reasoning for your prediction.
   `,
 });
 
