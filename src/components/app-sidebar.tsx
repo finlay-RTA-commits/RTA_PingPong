@@ -25,7 +25,8 @@ const menuItems = [
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/app/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/app/tournaments", label: "Tournaments", icon: Swords },
-  { href: "/app/player-cards", label: "Player Cards", icon: Users },
+  { href: "/app/player-cards", label: "Player Cards", icon: User },
+  { href: "/app/players", label: "Players", icon: Users },
 ];
 
 const bottomMenuItems = [
