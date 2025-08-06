@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { games as initialGames, tournaments } from "@/lib/data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -38,10 +40,16 @@ import {
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trophy, Calendar, Plus } from "lucide-react";
+import { Trophy, Calendar, Plus, ArrowRight } from "lucide-react";
 import type { Player, Game } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { usePlayers } from '@/hooks/use-players';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export default function DashboardPage() {
   const { players, updatePlayerStats } = usePlayers();
@@ -100,7 +108,7 @@ export default function DashboardPage() {
   return (
     <>
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <Card className="lg:col-span-1">
+      <Card className="lg:col-span-1 flex flex-col">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trophy className="text-primary" />
@@ -108,7 +116,7 @@ export default function DashboardPage() {
           </CardTitle>
           <CardDescription>Top 5 players.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-grow">
           <Table>
             <TableHeader>
               <TableRow>
@@ -138,13 +146,21 @@ export default function DashboardPage() {
             </TableBody>
           </Table>
         </CardContent>
+        <CardFooter>
+            <Button asChild variant="outline" className="w-full">
+                <Link href="/app/leaderboard">
+                    View All
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+            </Button>
+        </CardFooter>
       </Card>
       
-       <Card className="lg:col-span-2">
+       <Card className="lg:col-span-2 flex flex-col">
         <CardHeader>
           <CardTitle>Upcoming Tournaments</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-grow">
           <div className="space-y-4">
             {tournaments.slice(0, 2).map((tournament) => (
               <div key={tournament.id} className="flex items-center justify-between rounded-lg border p-4">
@@ -155,11 +171,19 @@ export default function DashboardPage() {
                         {tournament.date}
                     </p>
                 </div>
-                <Button variant="secondary">View Details</Button>
+                <Button variant="secondary" asChild><Link href="/app/tournaments">View Details</Link></Button>
               </div>
             ))}
           </div>
         </CardContent>
+         <CardFooter>
+            <Button asChild variant="outline" className="w-full">
+                <Link href="/app/tournaments">
+                    View All
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+            </Button>
+        </CardFooter>
       </Card>
 
       <Card className="lg:col-span-3">
@@ -209,13 +233,21 @@ export default function DashboardPage() {
       </Card>
       
     </div>
+    <TooltipProvider>
     <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetTrigger asChild>
-            <Button className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg" size="icon">
-                <Plus className="h-8 w-8" />
-                <span className="sr-only">Log a new game</span>
-            </Button>
-        </SheetTrigger>
+        <Tooltip>
+            <SheetTrigger asChild>
+                <TooltipTrigger asChild>
+                    <Button className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg" size="icon">
+                        <Plus className="h-8 w-8" />
+                        <span className="sr-only">Log a new game</span>
+                    </Button>
+                </TooltipTrigger>
+            </SheetTrigger>
+             <TooltipContent side="left">
+                <p>Log a new game</p>
+            </TooltipContent>
+        </Tooltip>
         <SheetContent>
             <SheetHeader>
                 <SheetTitle>Log a New Game</SheetTitle>
@@ -291,6 +323,7 @@ export default function DashboardPage() {
             </div>
         </SheetContent>
     </Sheet>
+    </TooltipProvider>
     </>
   );
 }
