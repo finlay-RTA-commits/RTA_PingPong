@@ -112,7 +112,7 @@ export default function DashboardPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Rank</TableHead>
+                <TableHead className="text-center">Rank</TableHead>
                 <TableHead>Player</TableHead>
                 <TableHead>Wins</TableHead>
               </TableRow>
@@ -120,7 +120,13 @@ export default function DashboardPage() {
             <TableBody>
               {players.slice(0, 5).map((player) => (
                 <TableRow key={player.id}>
-                  <TableCell className="font-bold">{player.rank}</TableCell>
+                  <TableCell className="text-center font-bold">
+                     {player.rank === 1 ? (
+                      <span className="inline-block -rotate-45 text-lg">👑</span>
+                    ) : (
+                      player.rank
+                    )}
+                  </TableCell>
                   <TableCell>{player.name}</TableCell>
                   <TableCell>{player.wins}</TableCell>
                 </TableRow>
