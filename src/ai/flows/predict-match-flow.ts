@@ -4,32 +4,25 @@
  * @fileOverview A flow for predicting ping pong match outcomes.
  *
  * - predictMatch - A function that predicts the winner between two players.
- * - PredictMatchInput - The input type for the predictMatch function.
- * - PredictMatchOutput - The return type for the predictMatch function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { players } from '@/lib/data';
+import { PredictMatchInputSchema, PredictMatchOutputSchema, PredictMatchInput, PredictMatchOutput } from '@/lib/types';
 
-const allPlayerNames = players.map(p => p.name);
 
-export const PredictMatchInputSchema = z.object({
-  player1Name: z.enum(allPlayerNames as [string, ...string[]]).describe('The name of the first player.'),
-  player2Name: z.enum(allPlayerNames as [string, ...string[]]).describe('The name of the second player.'),
+const allPlayerNames = players.map(p => p.name) as [string, ...string[]];
+
+const EnrichedPredictMatchInputSchema = PredictMatchInputSchema.extend({
+    player1Name: z.enum(allPlayerNames).describe('The name of the first player.'),
+    player2Name: z.enum(allPlayerNames).describe('The name of the second player.'),
 });
-export type PredictMatchInput = z.infer<typeof PredictMatchInputSchema>;
 
-export const PredictMatchOutputSchema = z.object({
-  winner: z.string().describe('The predicted winner of the match.'),
-  confidence: z.number().describe('The confidence level of the prediction, from 0 to 1.'),
-  reasoning: z.string().describe('A brief explanation for the prediction.'),
-});
-export type PredictMatchOutput = z.infer<typeof PredictMatchOutputSchema>;
 
 const prompt = ai.definePrompt({
   name: 'predictMatchPrompt',
-  input: { schema: PredictMatchInputSchema },
+  input: { schema: EnrichedPredictMatchInputSchema },
   output: { schema: PredictMatchOutputSchema },
   prompt: `
     You are a sports analyst for a competitive ping pong league. Your task is to predict the outcome of a match between two players based on their stats.
@@ -55,7 +48,7 @@ const prompt = ai.definePrompt({
 const predictMatchFlow = ai.defineFlow(
   {
     name: 'predictMatchFlow',
-    inputSchema: PredictMatchInputSchema,
+    inputSchema: EnrichedPredictMatchInputSchema,
     outputSchema: PredictMatchOutputSchema,
   },
   async (input) => {
@@ -71,5 +64,6 @@ const predictMatchFlow = ai.defineFlow(
 export async function predictMatch(
   input: PredictMatchInput
 ): Promise<PredictMatchOutput> {
-  return await predictMatchFlow(input);
+  const validatedInput = EnrichedPredictMatchInputSchema.parse(input);
+  return await predictMatchFlow(validatedInput);
 }

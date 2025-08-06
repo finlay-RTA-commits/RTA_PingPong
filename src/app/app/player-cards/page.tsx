@@ -3,13 +3,13 @@
 
 import { useState } from 'react';
 import { players } from '@/lib/data';
-import type { Player } from '@/lib/types';
+import type { Player, PredictMatchInput, PredictMatchOutput } from '@/lib/types';
 import { PlayerCard } from '@/components/player-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, BrainCircuit } from 'lucide-react';
-import { predictMatch, PredictMatchInput, PredictMatchOutput } from '@/ai/flows/predict-match-flow';
+import { predictMatch } from '@/ai/flows/predict-match-flow';
 import { useToast } from '@/hooks/use-toast';
 
 export default function PlayerCardsPage() {

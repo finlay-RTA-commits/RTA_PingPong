@@ -1,4 +1,6 @@
 
+import { z } from 'zod';
+
 export type Player = {
   id: number;
   name: string;
@@ -31,3 +33,18 @@ export type Tournament = {
   participants: number;
   imageUrl: string;
 };
+
+// === AI Flow Types ===
+
+export const PredictMatchInputSchema = z.object({
+  player1Name: z.string().describe('The name of the first player.'),
+  player2Name: z.string().describe('The name of the second player.'),
+});
+export type PredictMatchInput = z.infer<typeof PredictMatchInputSchema>;
+
+export const PredictMatchOutputSchema = z.object({
+  winner: z.string().describe('The predicted winner of the match.'),
+  confidence: z.number().describe('The confidence level of the prediction, from 0 to 1.'),
+  reasoning: z.string().describe('A brief explanation for the prediction.'),
+});
+export type PredictMatchOutput = z.infer<typeof PredictMatchOutputSchema>;
