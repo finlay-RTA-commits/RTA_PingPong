@@ -52,7 +52,7 @@ export default function LeaderboardPage() {
                 <TableRow key={player.id}>
                   <TableCell className="w-[80px] text-center text-lg font-bold">
                     {player.rank === 1 ? (
-                      <span className="inline-block -rotate-[60deg]">👑</span>
+                      <span className="inline-block -rotate-[35deg]">👑</span>
                     ) : player.rank === 2 ? (
                       <span>🥈</span>
                     ) : player.rank === 3 ? (

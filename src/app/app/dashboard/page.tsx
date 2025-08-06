@@ -122,7 +122,7 @@ export default function DashboardPage() {
                 <TableRow key={player.id}>
                   <TableCell className="text-center font-bold text-lg">
                      {player.rank === 1 ? (
-                      <span className="inline-block -rotate-[60deg]">👑</span>
+                      <span className="inline-block -rotate-[35deg]">👑</span>
                     ) : player.rank === 2 ? (
                       <span>🥈</span>
                     ) : player.rank === 3 ? (
