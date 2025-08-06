@@ -55,16 +55,14 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href} legacyBehavior passHref>
+                <Link href={item.href} legacyBehavior={false} passHref>
                   <SidebarMenuButton
-                    asChild
+                    as="a"
                     isActive={isActive(item.href)}
                     tooltip={item.label}
                   >
-                    <a>
                       <item.icon />
                       <span>{item.label}</span>
-                    </a>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
@@ -75,16 +73,14 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             {bottomMenuItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href} legacyBehavior passHref>
+                <Link href={item.href} legacyBehavior={false} passHref>
                   <SidebarMenuButton
-                    asChild
+                    as="a"
                     isActive={isActive(item.href)}
                     tooltip={item.label}
                   >
-                    <a>
                       <item.icon />
                       <span>{item.label}</span>
-                    </a>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
@@ -94,10 +90,10 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
                   onClick={logout}
                   tooltip="Logout"
                 >
-                  <a>
+                  
                     <LogOut />
                     <span>Logout</span>
-                  </a>
+                  
                 </SidebarMenuButton>
               </SidebarMenuItem>
           </SidebarMenu>
