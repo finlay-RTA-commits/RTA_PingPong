@@ -6,7 +6,6 @@ import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, order
 import type { Player } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { useToast } from './use-toast';
-import { players as initialPlayers } from '@/lib/data';
 
 interface PlayerContextType {
   players: Player[];
@@ -30,56 +29,25 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const seedDatabase = useCallback(async () => {
-    const playersCollection = collection(db, "players");
-    const snapshot = await getDocs(playersCollection);
-    
-    if (snapshot.empty) {
-        console.log('Players collection is empty. Seeding initial data...');
-        const batch = writeBatch(db);
-        initialPlayers.forEach(player => {
-            const docRef = doc(playersCollection);
-            // Casting the seeded player to fit the full Player type for Firestore
-            const fullPlayerData: Omit<Player, 'id'> = {
-              uid: undefined, // Seeded players don't have auth uids
-              ...player
-            };
-            batch.set(docRef, fullPlayerData);
-        });
-        await batch.commit();
-        console.log('Database seeded.');
-    }
-  }, []);
-
   useEffect(() => {
-    const initializeAndListen = async () => {
-        setLoading(true);
-        const playersCollection = collection(db, "players");
-        const snapshot = await getDocs(playersCollection);
-        if (snapshot.empty) {
-            await seedDatabase();
-        }
-
-        const q = query(playersCollection, orderBy("wins", "desc"));
-        
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-          const playersData: Player[] = [];
-          querySnapshot.forEach((doc) => {
-            playersData.push({ id: doc.id, ...doc.data() } as Player);
-          });
-          setPlayers(reRankPlayers(playersData));
-          setLoading(false);
-        }, (error) => {
-            console.error("Error fetching players:", error);
-            toast({variant: 'destructive', title: 'Error', description: 'Could not fetch players from Firestore.'});
-            setLoading(false);
-        });
-        
-        return () => unsubscribe();
-    }
+    const playersCollection = collection(db, "players");
+    const q = query(playersCollection, orderBy("wins", "desc"));
     
-    initializeAndListen();
-  }, [toast, seedDatabase]);
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const playersData: Player[] = [];
+      querySnapshot.forEach((doc) => {
+        playersData.push({ id: doc.id, ...doc.data() } as Player);
+      });
+      setPlayers(reRankPlayers(playersData));
+      setLoading(false);
+    }, (error) => {
+        console.error("Error fetching players:", error);
+        toast({variant: 'destructive', title: 'Error', description: 'Could not fetch players from Firestore.'});
+        setLoading(false);
+    });
+    
+    return () => unsubscribe();
+  }, [toast]);
 
   const addPlayer = async (name: string, avatar: string, uid?: string) => {
     try {

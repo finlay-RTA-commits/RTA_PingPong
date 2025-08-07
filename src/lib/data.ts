@@ -1,7 +1,8 @@
 
 import type { Player, Game, Tournament } from './types';
 
-// This data is now used for initial seeding if the database is empty. The primary source of truth is Firestore.
+// This data is no longer used by the application, which now connects directly to Firestore.
+// It can be removed or kept for reference, but it does not affect the live app data.
 
 export const players: Omit<Player, 'id' | 'uid'>[] = [
   { name: 'Alice', rank: 1, wins: 15, losses: 2, avatar: 'https://placehold.co/40x40.png', stats: { winStreak: 5, rival: 'Bob', bestScore: '11-2' }, tournamentsWon: 2 },
