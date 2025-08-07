@@ -43,7 +43,7 @@ const prompt = ai.definePrompt({
     - Losses: {{losses}}
     - Win Streak: {{stats.winStreak}}
     - Rival: {{stats.rival}}
-    - Best Score: {{stats.bestScore}}
+    - Highest Streak: {{stats.highestStreak}}
     {{/each}}
 
     Analyze the provided stats for the two players in the upcoming match: {{{player1Name}}} vs. {{{player2Name}}}.

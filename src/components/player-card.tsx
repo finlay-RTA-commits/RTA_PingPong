@@ -82,7 +82,7 @@ export function PlayerCard({ player }: PlayerCardProps) {
        <CardFooter className="p-4 pt-0">
         <Button asChild variant="outline" className="w-full" disabled={!player.email}>
           <a href={gmailLink} target="_blank" rel="noopener noreferrer">
-            <Mail className="mr-2" />
+            <Mail className="mr-2 h-4 w-4" />
             {player.email ? 'Invite to Game' : 'Email not available'}
           </a>
         </Button>

@@ -125,7 +125,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
       const playerGames = [
           ...allGames.filter(g => g.player1Id === playerId || g.player2Id === playerId),
           // Add the current game to the list for calculation
-          { player1Id, player2Id, score1, score2, date: new Date().toISOString(), id: 'current' }
+          { player1Id, player2Id, score1, score2, date: new Date().toISOString(), id: 'current', tournamentId: null }
       ].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
 
