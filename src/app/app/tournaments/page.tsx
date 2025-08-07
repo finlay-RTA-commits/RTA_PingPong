@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar, PlusCircle, Users, GitMerge, Edit, Trash2, UserX } from "lucide-react";
+import { Calendar, PlusCircle, Users, GitMerge, Edit, Trash2, UserX, Hourglass } from "lucide-react";
 import type { Tournament, Player, Game } from '@/lib/types';
 import { usePlayers } from '@/hooks/use-players';
 import { useToast } from '@/hooks/use-toast';
@@ -114,7 +114,16 @@ export default function TournamentsPage() {
   const [playerToAdd, setPlayerToAdd] = useState<string>("");
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const { toast } = useToast();
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+        setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const q = query(collection(db, "tournaments"), orderBy("date", "desc"));
@@ -231,6 +240,19 @@ export default function TournamentsPage() {
         });
     }
   };
+  
+  const getCountdown = (date: string) => {
+      const tournamentDate = new Date(date);
+      const diff = tournamentDate.getTime() - currentTime.getTime();
+
+      if (diff <= 0) {
+          return <span className="text-primary font-semibold">In Progress</span>;
+      }
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+
+      return <span className="font-semibold text-accent">{hours} hours to go</span>;
+  }
 
   const enrolledPlayers = useMemo(() => selectedTournament ? players.filter(p => selectedTournament.enrolledPlayerIds.includes(p.id)) : [], [players, selectedTournament]);
   const availablePlayers = useMemo(() => selectedTournament ? players.filter(p => !selectedTournament.enrolledPlayerIds.includes(p.id)) : [], [players, selectedTournament]);
@@ -374,6 +396,10 @@ export default function TournamentsPage() {
                     </span>
                     <span className="flex items-center gap-2">
                     <Users className="h-4 w-4" /> {tournament.participants} participants
+                    </span>
+                     <span className="flex items-center gap-2">
+                        <Hourglass className="h-4 w-4" />
+                        {getCountdown(tournament.date)}
                     </span>
                 </CardDescription>
                 </CardContent>
