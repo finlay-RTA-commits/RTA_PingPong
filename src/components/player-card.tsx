@@ -13,7 +13,19 @@ interface PlayerCardProps {
 export function PlayerCard({ player }: PlayerCardProps) {
   const winRate = player.wins + player.losses > 0 ? ((player.wins / (player.wins + player.losses)) * 100).toFixed(0) : 0;
   
-  const mailtoLink = `mailto:${player.email}?subject=Ping%20Pong%20Challenge!&body=Hey%20${player.name},%0D%0A%0D%0AI%20challenge%20you%20to%20a%20game%20of%20ping%20pong!%0D%0A%0D%0ALet%20me%20know%20when%20you're%20free%20to%20play.%0D%0A%0D%0AFrom%20the%20RTA%20PingPong%20App.`;
+  const generateGmailLink = () => {
+    if (!player.email) return undefined;
+    
+    const to = encodeURIComponent(player.email);
+    const subject = encodeURIComponent("Ping Pong Challenge!");
+    const body = encodeURIComponent(
+      `Hey ${player.name},\n\nI challenge you to a game of ping pong!\n\nLet me know when you're free to play.\n\nFrom the RTA PingPong App.`
+    );
+    
+    return `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`;
+  };
+
+  const gmailLink = generateGmailLink();
 
   return (
     <Card className="overflow-hidden bg-gradient-to-br from-card to-muted/50 shadow-lg flex flex-col">
@@ -69,7 +81,7 @@ export function PlayerCard({ player }: PlayerCardProps) {
       </CardContent>
        <CardFooter className="p-4 pt-0">
         <Button asChild variant="outline" className="w-full" disabled={!player.email}>
-          <a href={player.email ? mailtoLink : undefined}>
+          <a href={gmailLink} target="_blank" rel="noopener noreferrer">
             <Mail className="mr-2" />
             {player.email ? 'Invite to Game' : 'Email not available'}
           </a>
