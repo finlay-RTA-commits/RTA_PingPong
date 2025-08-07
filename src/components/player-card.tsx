@@ -1,9 +1,10 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { Player } from '@/lib/types';
-import { BarChart, Flame, Shield, Star, Swords, TrendingDown, TrendingUp, Trophy } from 'lucide-react';
+import { Flame, Mail, Star, Swords, Trophy } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface PlayerCardProps {
   player: Player;
@@ -12,8 +13,10 @@ interface PlayerCardProps {
 export function PlayerCard({ player }: PlayerCardProps) {
   const winRate = player.wins + player.losses > 0 ? ((player.wins / (player.wins + player.losses)) * 100).toFixed(0) : 0;
   
+  const mailtoLink = `mailto:${player.email}?subject=Ping%20Pong%20Challenge!&body=Hey%20${player.name},%0D%0A%0D%0AI%20challenge%20you%20to%20a%20game%20of%20ping%20pong!%0D%0A%0D%0ALet%20me%20know%20when%20you're%20free%20to%20play.%0D%0A%0D%0AFrom%20the%20RTA%20PingPong%20App.`;
+
   return (
-    <Card className="overflow-hidden bg-gradient-to-br from-card to-muted/50 shadow-lg transition-transform hover:scale-105 hover:shadow-primary/20">
+    <Card className="overflow-hidden bg-gradient-to-br from-card to-muted/50 shadow-lg flex flex-col">
       <CardHeader className="p-0">
         <div className="bg-primary/10 p-4">
           <div className="flex items-center gap-4">
@@ -33,7 +36,7 @@ export function PlayerCard({ player }: PlayerCardProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-4">
+      <CardContent className="p-4 flex-grow">
         <div className="grid grid-cols-3 gap-4 text-center">
             <div>
                 <p className="text-xs font-semibold text-muted-foreground">WINS</p>
@@ -64,6 +67,14 @@ export function PlayerCard({ player }: PlayerCardProps) {
             </div>
         </div>
       </CardContent>
+       <CardFooter className="p-4 pt-0">
+        <Button asChild variant="outline" className="w-full" disabled={!player.email}>
+          <a href={player.email ? mailtoLink : undefined}>
+            <Mail className="mr-2" />
+            {player.email ? 'Invite to Game' : 'Email not available'}
+          </a>
+        </Button>
+      </CardFooter>
     </Card>
   );
 }

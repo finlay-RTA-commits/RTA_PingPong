@@ -9,7 +9,7 @@ import { useToast } from './use-toast';
 
 interface PlayerContextType {
   players: Player[];
-  addPlayer: (name: string, avatar: string, uid?: string) => Promise<void>;
+  addPlayer: (name: string, avatar: string, email: string, uid?: string) => Promise<void>;
   updatePlayer: (updatedPlayer: Player) => Promise<void>;
   removePlayer: (playerId: string) => Promise<void>;
   updatePlayerStats: (player1Id: string, player2Id: string, score1: number, score2: number) => Promise<void>;
@@ -49,7 +49,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [toast]);
 
-  const addPlayer = async (name: string, avatar: string, uid?: string) => {
+  const addPlayer = async (name: string, avatar: string, email: string, uid?: string) => {
     try {
         if(uid) {
             const existingPlayerQuery = query(collection(db, "players"), where("uid", "==", uid));
@@ -64,6 +64,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
         await addDoc(collection(db, "players"), {
             name,
             avatar,
+            email,
             rank: 99, // Rank will be recalculated on the next snapshot
             wins: 0,
             losses: 0,

@@ -5,6 +5,7 @@ export type Player = {
   id: string; // Firestore document ID
   uid?: string; // Firebase Auth User ID
   name: string;
+  email?: string; // Player's email for invites
   rank: number;
   wins: number;
   losses: number;

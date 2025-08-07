@@ -45,9 +45,11 @@ import {
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePlayers } from '@/hooks/use-players';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function PlayersPage() {
   const { players, addPlayer, updatePlayer, removePlayer } = usePlayers();
+  const { user } = useAuth();
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
@@ -62,6 +64,8 @@ export default function PlayersPage() {
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
     const avatar = formData.get('avatar') as string || 'https://placehold.co/40x40.png';
+    // For admin-added players, email is not available/required
+    const email = editingPlayer?.email || ''; 
 
     if (!name) {
       toast({ variant: 'destructive', title: 'Error', description: 'Player name is required.' });
@@ -72,7 +76,7 @@ export default function PlayersPage() {
       await updatePlayer({ ...editingPlayer, name, avatar });
       toast({ title: 'Player Updated', description: `${name} has been updated.` });
     } else {
-      await addPlayer(name, avatar);
+      await addPlayer(name, avatar, email); // email is blank
       toast({ title: 'Player Added', description: `${name} has been added to the roster.` });
     }
 
@@ -100,8 +104,12 @@ export default function PlayersPage() {
       setEditingPlayer(actionToConfirm.player);
       setIsFormDialogOpen(true);
     } else if (actionToConfirm?.type === 'delete') {
-      await removePlayer(actionToConfirm.player.id);
-      toast({ title: 'Player Removed', description: `${actionToConfirm.player.name} has been removed.` });
+      if(actionToConfirm.player.uid === user?.uid) {
+         toast({ variant: 'destructive', title: 'Action Denied', description: 'You cannot remove your own player profile via this admin panel. Please use the profile page.' });
+      } else {
+        await removePlayer(actionToConfirm.player.id);
+        toast({ title: 'Player Removed', description: `${actionToConfirm.player.name} has been removed.` });
+      }
     }
 
     handleAuthDialogClose();

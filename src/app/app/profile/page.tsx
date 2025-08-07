@@ -55,14 +55,14 @@ export default function ProfilePage() {
     try {
         if (currentUserStats) {
           // Update existing player
-          await updatePlayer({ ...currentUserStats, name: displayName, avatar });
+          await updatePlayer({ ...currentUserStats, name: displayName, avatar, email: user.email ?? undefined });
           toast({
             title: "Profile Updated",
             description: "Your changes have been saved.",
           });
         } else {
            // Add new player, linking with Firebase Auth UID
-          await addPlayer(displayName, avatar, user.uid);
+          await addPlayer(displayName, avatar, user.email || '', user.uid);
           toast({
             title: "Profile Created",
             description: "You are now on the player roster!",
