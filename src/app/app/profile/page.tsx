@@ -178,7 +178,7 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle>Player Statistics</CardTitle>
             <CardDescription>Your performance at a glance.</CardDescription>
-          </Header>
+          </CardHeader>
           <CardContent className="space-y-4">
             {currentUserStats ? (
               <>
