@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { games as initialGames, tournaments } from "@/lib/data";
+import { tournaments as initialTournaments } from "@/lib/data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Trophy, Calendar, Plus, ArrowRight } from "lucide-react";
-import type { Player, Game } from '@/lib/types';
+import type { Player, Game, Tournament } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { usePlayers } from '@/hooks/use-players';
 import {
@@ -50,12 +50,39 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { collection, onSnapshot, addDoc, query, orderBy, limit } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useEffect } from 'react';
 
 export default function DashboardPage() {
-  const { players, updatePlayerStats } = usePlayers();
-  const [games, setGames] = useState<Game[]>(initialGames);
+  const { players, updatePlayerStats, loading: playersLoading } = usePlayers();
+  const [games, setGames] = useState<Game[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Fetch recent games
+    const gamesQuery = query(collection(db, "games"), orderBy("date", "desc"), limit(5));
+    const gamesUnsubscribe = onSnapshot(gamesQuery, (snapshot) => {
+      const gamesData: Game[] = [];
+      snapshot.forEach(doc => gamesData.push({ id: doc.id, ...doc.data() } as Game));
+      setGames(gamesData);
+    });
+
+    // Fetch upcoming tournaments
+    const tournamentsQuery = query(collection(db, "tournaments"), orderBy("date", "asc"), limit(2));
+    const tournamentsUnsubscribe = onSnapshot(tournamentsQuery, (snapshot) => {
+        const tournamentsData: Tournament[] = [];
+        snapshot.forEach(doc => tournamentsData.push({ id: doc.id, ...doc.data() } as Tournament));
+        setTournaments(tournamentsData);
+    });
+
+    return () => {
+      gamesUnsubscribe();
+      tournamentsUnsubscribe();
+    };
+  }, []);
 
   const handleLogGame = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -84,22 +111,20 @@ export default function DashboardPage() {
       return;
     }
 
-    // This will now update Firestore
     await updatePlayerStats(player1Id, player2Id, score1, score2);
     
-    // Game logging to Firestore would be a good next step. 
-    // For now, just updating local state for display.
-    const newGame: Game = {
-      id: String(games.length + 1),
+    const newGame = {
       player1,
       player2,
+      player1Id,
+      player2Id,
       score1,
       score2,
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString(),
       tournamentId: tournamentIdStr && tournamentIdStr !== 'exhibition' ? tournamentIdStr : undefined
     };
-
-    setGames([newGame, ...games]);
+    
+    await addDoc(collection(db, 'games'), newGame);
     
     setIsSheetOpen(false);
 
@@ -164,13 +189,13 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent className="flex-grow">
           <div className="space-y-4">
-            {tournaments.slice(0, 2).map((tournament) => (
+            {tournaments.map((tournament) => (
               <div key={tournament.id} className="flex items-center justify-between rounded-lg border p-4">
                 <div>
                     <h3 className="font-semibold">{tournament.name}</h3>
                     <p className="text-sm text-muted-foreground flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
-                        {tournament.date}
+                        {new Date(tournament.date).toLocaleDateString()}
                     </p>
                 </div>
                 <Button variant="secondary" asChild><Link href="/app/tournaments">View Details</Link></Button>
@@ -224,9 +249,9 @@ export default function DashboardPage() {
                      {game.score2 > game.score1 && <Badge variant="default" className="bg-primary/20 text-primary">WIN</Badge>}
                   </TableCell>
                   <TableCell>
-                      {game.tournamentId ? tournaments.find(t=>t.id === game.tournamentId)?.name : 'Exhibition'}
+                      {game.tournamentId ? (tournaments.find(t => t.id === game.tournamentId)?.name || 'Tournament Game') : 'Exhibition'}
                   </TableCell>
-                  <TableCell className="text-right">{game.date}</TableCell>
+                  <TableCell className="text-right">{new Date(game.date).toLocaleDateString()}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -268,7 +293,7 @@ export default function DashboardPage() {
                           </SelectTrigger>
                           <SelectContent>
                             {players.map((p) => (
-                              <SelectItem key={p.id} value={String(p.id)}>
+                              <SelectItem key={p.id} value={p.id}>
                                 {p.name}
                               </SelectItem>
                             ))}
@@ -277,7 +302,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="space-y-2">
                         <Label>Score</Label>
-                        <Input name="score1" type="number" placeholder="Games won" required min="0" max="3" />
+                        <Input name="score1" type="number" placeholder="Games won" required min="0" />
                       </div>
                     </div>
                     
@@ -290,7 +315,7 @@ export default function DashboardPage() {
                           </SelectTrigger>
                           <SelectContent>
                             {players.map((p) => (
-                              <SelectItem key={p.id} value={String(p.id)}>
+                              <SelectItem key={p.id} value={p.id}>
                                 {p.name}
                               </SelectItem>
                             ))}
@@ -299,7 +324,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="space-y-2">
                         <Label>Score</Label>
-                        <Input name="score2" type="number" placeholder="Games won" required min="0" max="3"/>
+                        <Input name="score2" type="number" placeholder="Games won" required min="0"/>
                       </div>
                     </div>
 
@@ -312,7 +337,7 @@ export default function DashboardPage() {
                         <SelectContent>
                           <SelectItem value="exhibition">Exhibition Match</SelectItem>
                           {tournaments.map((t) => (
-                            <SelectItem key={t.id} value={String(t.id)}>
+                            <SelectItem key={t.id} value={t.id}>
                               {t.name}
                             </SelectItem>
                           ))}
@@ -329,3 +354,5 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    

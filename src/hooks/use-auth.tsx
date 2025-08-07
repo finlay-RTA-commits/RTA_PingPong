@@ -30,11 +30,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (!loading && !user && !pathname.startsWith('/')) {
-       // Allow access to root path for login
-       if (pathname !== '/') {
-         router.push('/');
-       }
+    // If loading is finished and there's no user,
+    // and they are not on the login page, redirect them.
+    if (!loading && !user && pathname !== '/') {
+      router.push('/');
     }
   }, [user, loading, router, pathname]);
 
@@ -57,3 +56,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+    
