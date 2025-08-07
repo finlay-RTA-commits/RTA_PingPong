@@ -64,7 +64,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
         await addDoc(collection(db, "players"), {
             name,
             avatar,
-            rank: 0, // Rank will be recalculated on the next snapshot
+            rank: 99, // Rank will be recalculated on the next snapshot
             wins: 0,
             losses: 0,
             stats: {
