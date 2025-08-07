@@ -8,21 +8,29 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { players } from '@/lib/data';
-import { PredictMatchInputSchema, PredictMatchOutputSchema, PredictMatchInput, PredictMatchOutput } from '@/lib/types';
+import { db } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import { Player, PredictMatchInputSchema, PredictMatchOutputSchema, PredictMatchInput, PredictMatchOutput } from '@/lib/types';
 
 
-const allPlayerNames = players.map(p => p.name) as [string, ...string[]];
-
-const EnrichedPredictMatchInputSchema = PredictMatchInputSchema.extend({
-    player1Name: z.enum(allPlayerNames).describe('The name of the first player.'),
-    player2Name: z.enum(allPlayerNames).describe('The name of the second player.'),
-});
+const getPlayers = async (): Promise<Player[]> => {
+    const playersCollection = collection(db, "players");
+    const snapshot = await getDocs(playersCollection);
+    const players: Player[] = [];
+    snapshot.forEach(doc => {
+        players.push({ id: doc.id, ...doc.data() } as Player);
+    });
+    return players;
+};
 
 
 const prompt = ai.definePrompt({
   name: 'predictMatchPrompt',
-  input: { schema: EnrichedPredictMatchInputSchema },
+  input: { schema: z.object({
+    player1Name: z.string(),
+    player2Name: z.string(),
+    players: z.any(),
+  })},
   output: { schema: PredictMatchOutputSchema },
   prompt: `
     You are a sports betting analyst for a competitive ping pong league. Your task is to predict the outcome of a match between two players and provide betting odds.
@@ -48,13 +56,21 @@ const prompt = ai.definePrompt({
 const predictMatchFlow = ai.defineFlow(
   {
     name: 'predictMatchFlow',
-    inputSchema: EnrichedPredictMatchInputSchema,
+    inputSchema: PredictMatchInputSchema,
     outputSchema: PredictMatchOutputSchema,
   },
   async (input) => {
+    const allPlayers = await getPlayers();
+    const player1 = allPlayers.find(p => p.name === input.player1Name);
+    const player2 = allPlayers.find(p => p.name === input.player2Name);
+
+    if (!player1 || !player2) {
+        throw new Error('One or both players not found');
+    }
+
     const { output } = await prompt({
       ...input,
-      players: players.filter(p => p.name === input.player1Name || p.name === input.player2Name),
+      players: [player1, player2],
     });
     return output!;
   }
@@ -64,6 +80,6 @@ const predictMatchFlow = ai.defineFlow(
 export async function predictMatch(
   input: PredictMatchInput
 ): Promise<PredictMatchOutput> {
-  const validatedInput = EnrichedPredictMatchInputSchema.parse(input);
-  return await predictMatchFlow(validatedInput);
+  // We will validate inside the flow after fetching live data
+  return await predictMatchFlow(input);
 }
