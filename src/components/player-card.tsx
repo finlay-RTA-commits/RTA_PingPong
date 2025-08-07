@@ -70,8 +70,8 @@ export function PlayerCard({ player }: PlayerCardProps) {
                 <span className="font-semibold">{player.stats?.winStreak ?? 0}</span>
             </div>
             <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-muted-foreground"><Star className="h-4 w-4 text-primary" /> Best Score</span>
-                <span className="font-mono font-semibold">{player.stats?.bestScore ?? 'N/A'}</span>
+                <span className="flex items-center gap-2 text-muted-foreground"><Star className="h-4 w-4 text-primary" /> Highest Streak</span>
+                <span className="font-semibold">{player.stats?.highestStreak ?? 0}</span>
             </div>
             <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-muted-foreground"><Swords className="h-4 w-4 text-primary" /> Main Rival</span>

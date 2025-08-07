@@ -17,13 +17,13 @@ export type Player = {
 export type PlayerStats = {
   winStreak: number;
   rival: string;
-  bestScore: string;
+  highestStreak: number;
 };
 
 export type Game = {
   id: string; // Firestore document ID
-  player1: Player; // This is populated client-side
-  player2: Player; // This is populated client-side
+  player1?: Player; // This is populated client-side
+  player2?: Player; // This is populated client-side
   player1Id: string;
   player2Id: string;
   score1: number;

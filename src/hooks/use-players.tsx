@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, writeBatch, getDocs, where } from 'firebase/firestore';
-import type { Player } from '@/lib/types';
+import type { Player, Game } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { useToast } from './use-toast';
 
@@ -71,7 +71,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
             stats: {
                 winStreak: 0,
                 rival: 'N/A',
-                bestScore: 'N/A'
+                highestStreak: 0,
             },
             tournamentsWon: 0,
             uid: uid || null 
@@ -103,34 +103,103 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updatePlayerStats = async (player1Id: string, player2Id: string, score1: number, score2: number) => {
-     const batch = writeBatch(db);
-     const player1Ref = doc(db, "players", player1Id);
-     const player2Ref = doc(db, "players", player2Id);
-     
-     const player1 = players.find(p => p.id === player1Id);
-     const player2 = players.find(p => p.id === player2Id);
+    const batch = writeBatch(db);
+    const allPlayers = players; 
+    
+    // Fetch all games to calculate stats
+    const gamesSnapshot = await getDocs(query(collection(db, "games"), orderBy("date", "asc")));
+    const allGames = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Game));
 
-     if (!player1 || !player2) {
-        toast({variant: 'destructive', title: 'Error', description: 'One or both players not found.'});
-        return;
-     }
+    const processPlayer = (playerId: string, ownScore: number, opponentScore: number, opponentId: string) => {
+      const player = allPlayers.find(p => p.id === playerId);
+      if (!player) return;
 
-     const player1NewWins = player1.wins + (score1 > score2 ? 1 : 0);
-     const player1NewLosses = player1.losses + (score1 < score2 ? 1 : 0);
-     
-     const player2NewWins = player2.wins + (score2 > score1 ? 1 : 0);
-     const player2NewLosses = player2.losses + (score2 < score1 ? 1 : 0);
+      const playerRef = doc(db, "players", playerId);
+      const wonGame = ownScore > opponentScore;
 
-     batch.update(player1Ref, { wins: player1NewWins, losses: player1NewLosses });
-     batch.update(player2Ref, { wins: player2NewWins, losses: player2NewLosses });
-     
+      // Calculate wins and losses
+      const newWins = player.wins + (wonGame ? 1 : 0);
+      const newLosses = player.losses + (wonGame ? 0 : 1);
+
+      // Get all games for this player, including the one just played
+      const playerGames = [
+          ...allGames.filter(g => g.player1Id === playerId || g.player2Id === playerId),
+          // Add the current game to the list for calculation
+          { player1Id, player2Id, score1, score2, date: new Date().toISOString(), id: 'current' }
+      ].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+
+      // Calculate current win streak
+      let currentStreak = 0;
+      for (let i = playerGames.length - 1; i >= 0; i--) {
+        const game = playerGames[i];
+        const isWinner = (game.player1Id === playerId && game.score1 > game.score2) || (game.player2Id === playerId && game.score2 > game.score1);
+        if (isWinner) {
+          currentStreak++;
+        } else {
+          break; // Streak broken
+        }
+      }
+
+      // Calculate highest streak
+      let maxStreak = 0;
+      let tempStreak = 0;
+      for (const game of playerGames) {
+          const isWinner = (game.player1Id === playerId && game.score1 > game.score2) || (game.player2Id === playerId && game.score2 > game.score1);
+          if (isWinner) {
+              tempStreak++;
+          } else {
+              if (tempStreak > maxStreak) {
+                  maxStreak = tempStreak;
+              }
+              tempStreak = 0;
+          }
+      }
+      if (tempStreak > maxStreak) {
+          maxStreak = tempStreak;
+      }
+      const highestStreak = maxStreak;
+
+      // Calculate rival
+      const opponentCounts = playerGames.reduce((acc, game) => {
+          const opponent = game.player1Id === playerId ? game.player2Id : game.player1Id;
+          acc[opponent] = (acc[opponent] || 0) + 1;
+          return acc;
+      }, {} as Record<string, number>);
+
+      let rivalId = 'N/A';
+      let maxGames = 0;
+      for (const [opponent, count] of Object.entries(opponentCounts)) {
+          if (count > maxGames) {
+              maxGames = count;
+              rivalId = opponent;
+          }
+      }
+      const rival = allPlayers.find(p => p.id === rivalId)?.name || 'N/A';
+
+      // Update batch
+      batch.update(playerRef, {
+        wins: newWins,
+        losses: newLosses,
+        stats: {
+          winStreak: currentStreak,
+          highestStreak: highestStreak,
+          rival: rival,
+        }
+      });
+    };
+
+    processPlayer(player1Id, score1, score2, player2Id);
+    processPlayer(player2Id, score2, score1, player1Id);
+
     try {
-        await batch.commit();
+      await batch.commit();
     } catch (e) {
-        console.error("Error updating stats: ", e);
-        toast({variant: 'destructive', title: 'Error', description: 'Could not update player stats in Firestore.'});
+      console.error("Error updating stats: ", e);
+      toast({variant: 'destructive', title: 'Error', description: 'Could not update player stats in Firestore.'});
     }
-  }
+  };
+
 
   return (
     <PlayerContext.Provider value={{ players, loading, addPlayer, updatePlayer, removePlayer, updatePlayerStats }}>
