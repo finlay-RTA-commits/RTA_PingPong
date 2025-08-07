@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, writeBatch, getDocs, where } from 'firebase/firestore';
 import type { Player } from '@/lib/types';
 import { db } from '@/lib/firebase';
@@ -30,51 +30,63 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
+  const seedDatabase = useCallback(async () => {
     const playersCollection = collection(db, "players");
-    const q = query(playersCollection, orderBy("wins", "desc"));
+    const snapshot = await getDocs(query(playersCollection).withConverter({
+      fromFirestore: (snapshot) => ({ id: snapshot.id, ...snapshot.data() } as Player),
+      toFirestore: (model) => model,
+    }));
     
-    const seedDatabase = async () => {
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) {
-            console.log('Players collection is empty. Seeding...');
-            const batch = writeBatch(db);
-            initialPlayers.forEach(player => {
-                const docRef = doc(playersCollection);
-                batch.set(docRef, player);
-            });
-            await batch.commit();
-        }
-    };
+    if (snapshot.empty) {
+        console.log('Players collection is empty. Seeding...');
+        const batch = writeBatch(db);
+        initialPlayers.forEach(player => {
+            const docRef = doc(playersCollection);
+            batch.set(docRef, player);
+        });
+        await batch.commit();
+    }
+  }, []);
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const playersData: Player[] = [];
-      querySnapshot.forEach((doc) => {
-        playersData.push({ id: doc.id, ...doc.data() } as Player);
-      });
-      setPlayers(reRankPlayers(playersData));
-      setLoading(false);
-    }, (error) => {
-        console.error("Error fetching players:", error);
-        toast({variant: 'destructive', title: 'Error', description: 'Could not fetch players.'});
-        setLoading(false);
-    });
+
+  useEffect(() => {
+    const initializeData = async () => {
+        setLoading(true);
+        await seedDatabase();
+
+        const playersCollection = collection(db, "players");
+        const q = query(playersCollection, orderBy("wins", "desc"));
+        
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+          const playersData: Player[] = [];
+          querySnapshot.forEach((doc) => {
+            playersData.push({ id: doc.id, ...doc.data() } as Player);
+          });
+          setPlayers(reRankPlayers(playersData));
+          setLoading(false);
+        }, (error) => {
+            console.error("Error fetching players:", error);
+            toast({variant: 'destructive', title: 'Error', description: 'Could not fetch players.'});
+            setLoading(false);
+        });
+        
+        return () => unsubscribe();
+    }
     
-    seedDatabase();
-
-    return () => unsubscribe();
-  }, [toast]);
+    initializeData();
+  }, [toast, seedDatabase]);
 
 
   const addPlayer = async (name: string, avatar: string, uid?: string) => {
     try {
-        const existingPlayerQuery = query(collection(db, "players"), where("uid", "==", uid));
-        const querySnapshot = await getDocs(existingPlayerQuery);
+        if(uid) {
+            const existingPlayerQuery = query(collection(db, "players"), where("uid", "==", uid));
+            const querySnapshot = await getDocs(existingPlayerQuery);
 
-        if (!querySnapshot.empty) {
-            // Player with this UID already exists.
-            toast({variant: 'destructive', title: 'Error', description: 'A player profile for this user already exists.'});
-            return;
+            if (!querySnapshot.empty) {
+                toast({variant: 'destructive', title: 'Error', description: 'A player profile for this user already exists.'});
+                return;
+            }
         }
 
         await addDoc(collection(db, "players"), {
@@ -89,7 +101,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
                 bestScore: 'N/A'
             },
             tournamentsWon: 0,
-            uid: uid // Link to Firebase Auth user
+            uid: uid || null 
         });
     } catch(e) {
         console.error("Error adding player: ", e);
@@ -100,7 +112,6 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
   const updatePlayer = async (updatedPlayer: Player) => {
     const playerDoc = doc(db, "players", updatedPlayer.id);
     try {
-        // Exclude id from the data being written to Firestore
         const { id, ...playerData } = updatedPlayer;
         await updateDoc(playerDoc, playerData);
     } catch(e) {
