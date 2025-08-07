@@ -63,9 +63,8 @@ export default function PlayersPage() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
+    const email = formData.get('email') as string;
     const avatar = formData.get('avatar') as string || 'https://placehold.co/40x40.png';
-    // For admin-added players, email is not available/required
-    const email = editingPlayer?.email || ''; 
 
     if (!name) {
       toast({ variant: 'destructive', title: 'Error', description: 'Player name is required.' });
@@ -73,10 +72,10 @@ export default function PlayersPage() {
     }
 
     if (editingPlayer) {
-      await updatePlayer({ ...editingPlayer, name, avatar });
+      await updatePlayer({ ...editingPlayer, name, avatar, email });
       toast({ title: 'Player Updated', description: `${name} has been updated.` });
     } else {
-      await addPlayer(name, avatar, email); // email is blank
+      await addPlayer(name, avatar, email); // email can be blank
       toast({ title: 'Player Added', description: `${name} has been added to the roster.` });
     }
 
@@ -161,6 +160,10 @@ export default function PlayersPage() {
                 <div className="space-y-2">
                   <Label htmlFor="name">Player Name</Label>
                   <Input id="name" name="name" defaultValue={editingPlayer?.name} required />
+                </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input id="email" name="email" type="email" defaultValue={editingPlayer?.email} placeholder="player@example.com" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="avatar">Avatar URL</Label>

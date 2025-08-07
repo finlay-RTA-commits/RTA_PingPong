@@ -55,7 +55,7 @@ export default function ProfilePage() {
     try {
         if (currentUserStats) {
           // Update existing player
-          await updatePlayer({ ...currentUserStats, name: displayName, avatar, email: user.email ?? undefined });
+          await updatePlayer({ ...currentUserStats, name: displayName, avatar, email: user.email || undefined });
           toast({
             title: "Profile Updated",
             description: "Your changes have been saved.",
@@ -138,7 +138,7 @@ export default function ProfilePage() {
                 </Card>
             </div>
         </div>
-      )
+      );
   }
 
   return (
@@ -178,7 +178,7 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle>Player Statistics</CardTitle>
             <CardDescription>Your performance at a glance.</CardDescription>
-          </CardHeader>
+          </Header>
           <CardContent className="space-y-4">
             {currentUserStats ? (
               <>
@@ -201,7 +201,7 @@ export default function ProfilePage() {
                 </div>
                  <div className="flex justify-between">
                   <span className="text-muted-foreground">Win Rate</span>
-                  <span className="font-medium font-mono">{winRate}%</span>
+                  <span className="font-mono font-medium">{winRate}%</span>
                 </div>
               </>
             ) : (
