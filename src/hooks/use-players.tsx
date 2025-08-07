@@ -54,10 +54,12 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const initializeAndListen = async () => {
         setLoading(true);
-        // Seed the database only if it's empty. This won't run again if players exist.
-        await seedDatabase();
-
         const playersCollection = collection(db, "players");
+        const snapshot = await getDocs(playersCollection);
+        if (snapshot.empty) {
+            await seedDatabase();
+        }
+
         const q = query(playersCollection, orderBy("wins", "desc"));
         
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
