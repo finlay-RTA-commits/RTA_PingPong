@@ -2,10 +2,11 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, writeBatch, getDocs, where } from 'firebase/firestore';
 import type { Player } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { useToast } from './use-toast';
+import { players as initialPlayers } from '@/lib/data';
 
 interface PlayerContextType {
   players: Player[];
@@ -30,7 +31,22 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const q = query(collection(db, "players"), orderBy("wins", "desc"));
+    const playersCollection = collection(db, "players");
+    const q = query(playersCollection, orderBy("wins", "desc"));
+    
+    const seedDatabase = async () => {
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+            console.log('Players collection is empty. Seeding...');
+            const batch = writeBatch(db);
+            initialPlayers.forEach(player => {
+                const docRef = doc(playersCollection);
+                batch.set(docRef, player);
+            });
+            await batch.commit();
+        }
+    };
+
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const playersData: Player[] = [];
       querySnapshot.forEach((doc) => {
@@ -43,6 +59,8 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
         toast({variant: 'destructive', title: 'Error', description: 'Could not fetch players.'});
         setLoading(false);
     });
+    
+    seedDatabase();
 
     return () => unsubscribe();
   }, [toast]);
@@ -50,6 +68,15 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
 
   const addPlayer = async (name: string, avatar: string, uid?: string) => {
     try {
+        const existingPlayerQuery = query(collection(db, "players"), where("uid", "==", uid));
+        const querySnapshot = await getDocs(existingPlayerQuery);
+
+        if (!querySnapshot.empty) {
+            // Player with this UID already exists.
+            toast({variant: 'destructive', title: 'Error', description: 'A player profile for this user already exists.'});
+            return;
+        }
+
         await addDoc(collection(db, "players"), {
             name,
             avatar,

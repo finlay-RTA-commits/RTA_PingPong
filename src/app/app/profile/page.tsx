@@ -29,6 +29,7 @@ export default function ProfilePage() {
   const [currentUserStats, setCurrentUserStats] = useState<Player | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [avatar, setAvatar] = useState('https://placehold.co/80x80.png');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (user && !playersLoading) {
@@ -49,21 +50,33 @@ export default function ProfilePage() {
 
   const handleSaveChanges = async () => {
     if(!user) return;
+    setIsSaving(true);
     
-    if (currentUserStats) {
-      // Update existing player
-      await updatePlayer({ ...currentUserStats, name: displayName, avatar });
-      toast({
-        title: "Profile Updated",
-        description: "Your changes have been saved.",
-      });
-    } else {
-       // Add new player, linking with Firebase Auth UID
-      await addPlayer(displayName, avatar, user.uid);
-      toast({
-        title: "Profile Created",
-        description: "You are now on the player roster!",
-      });
+    try {
+        if (currentUserStats) {
+          // Update existing player
+          await updatePlayer({ ...currentUserStats, name: displayName, avatar });
+          toast({
+            title: "Profile Updated",
+            description: "Your changes have been saved.",
+          });
+        } else {
+           // Add new player, linking with Firebase Auth UID
+          await addPlayer(displayName, avatar, user.uid);
+          toast({
+            title: "Profile Created",
+            description: "You are now on the player roster!",
+          });
+        }
+    } catch (error) {
+        console.error("Error saving profile:", error);
+        toast({
+            variant: 'destructive',
+            title: "Error",
+            description: "Could not save your profile. Please try again.",
+        });
+    } finally {
+        setIsSaving(false);
     }
   };
   
@@ -153,7 +166,9 @@ export default function ProfilePage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button onClick={handleSaveChanges}>Save Changes</Button>
+            <Button onClick={handleSaveChanges} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
           </CardFooter>
         </Card>
       </div>
