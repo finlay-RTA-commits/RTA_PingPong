@@ -32,26 +32,29 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
 
   const seedDatabase = useCallback(async () => {
     const playersCollection = collection(db, "players");
-    const snapshot = await getDocs(query(playersCollection).withConverter({
-      fromFirestore: (snapshot) => ({ id: snapshot.id, ...snapshot.data() } as Player),
-      toFirestore: (model) => model,
-    }));
+    const snapshot = await getDocs(playersCollection);
     
     if (snapshot.empty) {
-        console.log('Players collection is empty. Seeding...');
+        console.log('Players collection is empty. Seeding initial data...');
         const batch = writeBatch(db);
         initialPlayers.forEach(player => {
             const docRef = doc(playersCollection);
-            batch.set(docRef, player);
+            // Casting the seeded player to fit the full Player type for Firestore
+            const fullPlayerData: Omit<Player, 'id'> = {
+              uid: undefined, // Seeded players don't have auth uids
+              ...player
+            };
+            batch.set(docRef, fullPlayerData);
         });
         await batch.commit();
+        console.log('Database seeded.');
     }
   }, []);
 
-
   useEffect(() => {
-    const initializeData = async () => {
+    const initializeAndListen = async () => {
         setLoading(true);
+        // Seed the database only if it's empty. This won't run again if players exist.
         await seedDatabase();
 
         const playersCollection = collection(db, "players");
@@ -66,16 +69,15 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
           setLoading(false);
         }, (error) => {
             console.error("Error fetching players:", error);
-            toast({variant: 'destructive', title: 'Error', description: 'Could not fetch players.'});
+            toast({variant: 'destructive', title: 'Error', description: 'Could not fetch players from Firestore.'});
             setLoading(false);
         });
         
         return () => unsubscribe();
     }
     
-    initializeData();
+    initializeAndListen();
   }, [toast, seedDatabase]);
-
 
   const addPlayer = async (name: string, avatar: string, uid?: string) => {
     try {
@@ -92,7 +94,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
         await addDoc(collection(db, "players"), {
             name,
             avatar,
-            rank: players.length + 1, // Initial rank
+            rank: 0, // Rank will be recalculated on the next snapshot
             wins: 0,
             losses: 0,
             stats: {
@@ -105,7 +107,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
         });
     } catch(e) {
         console.error("Error adding player: ", e);
-        toast({variant: 'destructive', title: 'Error', description: 'Could not add player.'});
+        toast({variant: 'destructive', title: 'Error', description: 'Could not add player to Firestore.'});
     }
   };
 
@@ -116,7 +118,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
         await updateDoc(playerDoc, playerData);
     } catch(e) {
         console.error("Error updating player: ", e);
-        toast({variant: 'destructive', title: 'Error', description: 'Could not update player.'});
+        toast({variant: 'destructive', title: 'Error', description: 'Could not update player in Firestore.'});
     }
   };
   
@@ -125,7 +127,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
         await deleteDoc(doc(db, "players", playerId));
     } catch(e) {
         console.error("Error removing player: ", e);
-        toast({variant: 'destructive', title: 'Error', description: 'Could not remove player.'});
+        toast({variant: 'destructive', title: 'Error', description: 'Could not remove player from Firestore.'});
     }
   };
 
@@ -155,7 +157,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
         await batch.commit();
     } catch (e) {
         console.error("Error updating stats: ", e);
-        toast({variant: 'destructive', title: 'Error', description: 'Could not update player stats.'});
+        toast({variant: 'destructive', title: 'Error', description: 'Could not update player stats in Firestore.'});
     }
   }
 
