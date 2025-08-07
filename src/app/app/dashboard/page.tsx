@@ -309,8 +309,17 @@ export default function DashboardPage() {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label>Score</Label>
-                        <Input name="score1" type="number" placeholder="Games won" required min="0" />
+                        <Label>Sets Won</Label>
+                        <Select name="score1" required>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select score" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="0">0</SelectItem>
+                                <SelectItem value="1">1</SelectItem>
+                                <SelectItem value="2">2</SelectItem>
+                            </SelectContent>
+                        </Select>
                       </div>
                     </div>
                     
@@ -331,8 +340,17 @@ export default function DashboardPage() {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label>Score</Label>
-                        <Input name="score2" type="number" placeholder="Games won" required min="0"/>
+                        <Label>Sets Won</Label>
+                        <Select name="score2" required>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select score" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="0">0</SelectItem>
+                                <SelectItem value="1">1</SelectItem>
+                                <SelectItem value="2">2</SelectItem>
+                            </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
