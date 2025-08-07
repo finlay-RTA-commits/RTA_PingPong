@@ -21,12 +21,14 @@ export type PlayerStats = {
 
 export type Game = {
   id: string; // Firestore document ID
-  player1: Player;
-  player2: Player;
+  player1: Player; // This is populated client-side
+  player2: Player; // This is populated client-side
+  player1Id: string;
+  player2Id: string;
   score1: number;
   score2: number;
   date: string;
-  tournamentId?: string;
+  tournamentId?: string | null;
 };
 
 export type Tournament = {

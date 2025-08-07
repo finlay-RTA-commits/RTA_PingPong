@@ -9,7 +9,7 @@ import { useToast } from './use-toast';
 
 interface PlayerContextType {
   players: Player[];
-  addPlayer: (name: string, avatar: string, id?: string) => Promise<void>;
+  addPlayer: (name: string, avatar: string, uid?: string) => Promise<void>;
   updatePlayer: (updatedPlayer: Player) => Promise<void>;
   removePlayer: (playerId: string) => Promise<void>;
   updatePlayerStats: (player1Id: string, player2Id: string, score1: number, score2: number) => Promise<void>;
@@ -48,7 +48,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
   }, [toast]);
 
 
-  const addPlayer = async (name: string, avatar: string, id?: string) => {
+  const addPlayer = async (name: string, avatar: string, uid?: string) => {
     try {
         await addDoc(collection(db, "players"), {
             name,
@@ -62,7 +62,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
                 bestScore: 'N/A'
             },
             tournamentsWon: 0,
-            uid: id // Link to Firebase Auth user
+            uid: uid // Link to Firebase Auth user
         });
     } catch(e) {
         console.error("Error adding player: ", e);

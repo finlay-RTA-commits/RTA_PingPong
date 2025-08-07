@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from "next/image";
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Button } from "@/components/ui/button";
 import {
@@ -48,6 +48,8 @@ import type { Tournament, Player } from '@/lib/types';
 import { usePlayers } from '@/hooks/use-players';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 interface BracketRound {
     title: string;
@@ -89,7 +91,7 @@ const generateBracket = (participants: Player[]): BracketRound[] => {
         currentRoundPlayers = nextRoundPlayers.filter(p => p !== null); 
         roundNumber++;
     }
-     if (bracket.length > 0) {
+     if (bracket.length > 0 && currentRoundPlayers.length > 0) {
         bracket.push({
             title: 'Winner',
             seeds: [[currentRoundPlayers[0], null]]
@@ -111,14 +113,19 @@ export default function TournamentsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "tournaments"), (snapshot) => {
+    const q = query(collection(db, "tournaments"), orderBy("date", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
         const tournamentsData: Tournament[] = [];
         snapshot.forEach(doc => tournamentsData.push({ id: doc.id, ...doc.data() } as Tournament));
         setTournaments(tournamentsData);
         setLoading(false);
+    }, (error) => {
+        console.error("Error fetching tournaments:", error);
+        toast({variant: 'destructive', title: 'Error', description: 'Could not fetch tournaments.'});
+        setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -260,134 +267,154 @@ export default function TournamentsPage() {
           </DialogContent>
         </Dialog>
       </div>
-
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {tournaments.map((tournament) => (
-          <Card key={tournament.id} className="flex flex-col">
-            <CardHeader className="p-0">
-               <div className="aspect-video overflow-hidden rounded-t-lg border-b relative">
-                <Image
-                  src={tournament.imageUrl}
-                  alt={tournament.name}
-                  width={600}
-                  height={400}
-                  className="h-full w-full object-cover"
-                  data-ai-hint="ping pong"
-                />
-                <div className="absolute top-2 right-2 flex gap-2">
-                    <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => handleOpenEdit(tournament)}>
-                        <Edit className="h-4 w-4"/>
-                        <span className="sr-only">Edit</span>
-                    </Button>
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                           <Button size="icon" variant="destructive" className="h-8 w-8">
-                                <Trash2 className="h-4 w-4"/>
-                                <span className="sr-only">Delete</span>
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the tournament.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteTournament(tournament.id)}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+      
+      {loading ? (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i}>
+                <CardHeader className="p-0">
+                    <Skeleton className="aspect-video w-full rounded-t-lg" />
+                </CardHeader>
+                <CardContent className="p-4">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="mt-2 h-4 w-1/2" />
+                    <Skeleton className="mt-1 h-4 w-1/3" />
+                </CardContent>
+                <CardFooter className="p-4 pt-0">
+                    <Skeleton className="h-10 w-full" />
+                </CardFooter>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {tournaments.map((tournament) => (
+            <Card key={tournament.id} className="flex flex-col">
+                <CardHeader className="p-0">
+                <div className="aspect-video overflow-hidden rounded-t-lg border-b relative">
+                    <Image
+                    src={tournament.imageUrl}
+                    alt={tournament.name}
+                    width={600}
+                    height={400}
+                    className="h-full w-full object-cover"
+                    data-ai-hint="ping pong"
+                    />
+                    <div className="absolute top-2 right-2 flex gap-2">
+                        <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => handleOpenEdit(tournament)}>
+                            <Edit className="h-4 w-4"/>
+                            <span className="sr-only">Edit</span>
+                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                            <Button size="icon" variant="destructive" className="h-8 w-8">
+                                    <Trash2 className="h-4 w-4"/>
+                                    <span className="sr-only">Delete</span>
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the tournament.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteTournament(tournament.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-grow p-4">
-              <CardTitle>{tournament.name}</CardTitle>
-              <CardDescription className="mt-2 flex flex-col gap-2">
-                 <span className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" /> {tournament.date}
-                </span>
-                <span className="flex items-center gap-2">
-                  <Users className="h-4 w-4" /> {tournament.participants} participants
-                </span>
-              </CardDescription>
-            </CardContent>
-            <CardFooter className="p-4 pt-0">
-              <Dialog>
-                <DialogTrigger asChild>
-                   <Button className="w-full" variant="secondary" onClick={() => setSelectedTournament(tournaments.find(t=>t.id === tournament.id) ?? null)}>View Bracket</Button>
-                </DialogTrigger>
-                 <DialogContent className="max-w-7xl grid-rows-[auto_1fr] h-[90vh]">
-                    <DialogHeader>
-                        <DialogTitle>{selectedTournament?.name}</DialogTitle>
-                        <DialogDescription>A visual bracket of the tournament progress and player management.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6 overflow-hidden h-full">
-                       <div className="flex flex-col gap-4 border-r pr-6">
-                           <h3 className="font-semibold text-lg">Participants ({enrolledPlayers.length})</h3>
-                           <div className="flex gap-2">
-                                <Select onValueChange={(playerId) => handleAddPlayer(selectedTournament!.id, playerId)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Add Player" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {availablePlayers.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                           </div>
-                           <ScrollArea className="flex-1">
-                               <div className="space-y-2">
-                                   {enrolledPlayers.map(player => (
-                                       <div key={player.id} className="flex items-center justify-between rounded-md border p-2">
-                                           <span>{player.name}</span>
-                                           <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => handleRemovePlayer(selectedTournament!.id, player.id)}>
-                                               <UserX className="h-4 w-4"/>
-                                           </Button>
-                                       </div>
-                                   ))}
-                               </div>
-                           </ScrollArea>
-                       </div>
-                        {bracket.length > 0 ? (
-                            <ScrollArea className="h-full">
-                                <div className="flex space-x-8 p-4">
-                                {bracket.map((round, roundIndex) => (
-                                    <div key={roundIndex} className="flex flex-col space-y-4">
-                                    <h3 className="font-bold text-center">{round.title}</h3>
-                                    <div className="flex flex-col justify-around min-h-full space-y-16">
-                                        {round.seeds.map((match, matchIndex) => (
-                                        <div key={matchIndex} className="relative">
-                                            <div className="flex flex-col space-y-2">
-                                                <div className="border p-2 rounded-md bg-muted/50 w-48 text-sm">{match[0]?.name ?? 'BYE'}</div>
-                                                <div className="border p-2 rounded-md bg-muted/50 w-48 text-sm">{match[1]?.name ?? (match[0] ? 'BYE' : 'TBD')}</div>
-                                            </div>
-                                             {roundIndex < bracket.length - 2 && (
-                                                <div className="absolute top-1/2 -right-10 h-[calc(100%_+_4rem)] w-10 border-r border-b border-border -translate-y-[calc(50%_-_(50%_/_2)_*_${matchIndex%2 === 0 ? 1 : -1})]" />
-                                            )}
-                                             {roundIndex === bracket.length - 2 && (
-                                                 <div className="absolute top-1/2 -right-10 h-px w-10 bg-border -translate-y-1/2"></div>
-                                             )}
+                </CardHeader>
+                <CardContent className="flex-grow p-4">
+                <CardTitle>{tournament.name}</CardTitle>
+                <CardDescription className="mt-2 flex flex-col gap-2">
+                    <span className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" /> {new Date(tournament.date).toLocaleDateString()}
+                    </span>
+                    <span className="flex items-center gap-2">
+                    <Users className="h-4 w-4" /> {tournament.participants} participants
+                    </span>
+                </CardDescription>
+                </CardContent>
+                <CardFooter className="p-4 pt-0">
+                <Dialog onOpenChange={(isOpen) => !isOpen && setSelectedTournament(null)}>
+                    <DialogTrigger asChild>
+                    <Button className="w-full" variant="secondary" onClick={() => setSelectedTournament(tournaments.find(t=>t.id === tournament.id) ?? null)}>View Bracket</Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-7xl grid-rows-[auto_1fr] h-[90vh]">
+                        <DialogHeader>
+                            <DialogTitle>{selectedTournament?.name}</DialogTitle>
+                            <DialogDescription>A visual bracket of the tournament progress and player management.</DialogDescription>
+                        </DialogHeader>
+                        <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6 overflow-hidden h-full">
+                        <div className="flex flex-col gap-4 border-r pr-6">
+                            <h3 className="font-semibold text-lg">Participants ({enrolledPlayers.length})</h3>
+                            <div className="flex gap-2">
+                                    <Select onValueChange={(playerId) => handleAddPlayer(selectedTournament!.id, playerId)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Add Player" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {availablePlayers.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                            </div>
+                            <ScrollArea className="flex-1">
+                                <div className="space-y-2">
+                                    {enrolledPlayers.map(player => (
+                                        <div key={player.id} className="flex items-center justify-between rounded-md border p-2">
+                                            <span>{player.name}</span>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => handleRemovePlayer(selectedTournament!.id, player.id)}>
+                                                <UserX className="h-4 w-4"/>
+                                            </Button>
                                         </div>
-                                        ))}
-                                    </div>
-                                    </div>
-                                ))}
+                                    ))}
                                 </div>
                             </ScrollArea>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center text-center p-8 border rounded-lg bg-muted/50 h-full">
-                                <GitMerge className="h-12 w-12 text-muted-foreground" />
-                                <p className="mt-4 text-muted-foreground">Add at least 2 players to generate a bracket.</p>
-                            </div>
-                        )}
-                    </div>
-                 </DialogContent>
-              </Dialog>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+                        </div>
+                            {bracket.length > 0 ? (
+                                <ScrollArea className="h-full">
+                                    <div className="flex space-x-8 p-4">
+                                    {bracket.map((round, roundIndex) => (
+                                        <div key={roundIndex} className="flex flex-col space-y-4">
+                                        <h3 className="font-bold text-center">{round.title}</h3>
+                                        <div className="flex flex-col justify-around min-h-full space-y-16">
+                                            {round.seeds.map((match, matchIndex) => (
+                                            <div key={matchIndex} className="relative">
+                                                <div className="flex flex-col space-y-2">
+                                                    <div className="border p-2 rounded-md bg-muted/50 w-48 text-sm">{match[0]?.name ?? 'BYE'}</div>
+                                                    <div className="border p-2 rounded-md bg-muted/50 w-48 text-sm">{match[1]?.name ?? (match[0] ? 'BYE' : 'TBD')}</div>
+                                                </div>
+                                                {roundIndex < bracket.length - 2 && (
+                                                    <div className="absolute top-1/2 -right-10 h-[calc(100%_+_4rem)] w-10 border-r border-b border-border -translate-y-[calc(50%_-_(50%_/_2)_*_${matchIndex%2 === 0 ? 1 : -1})]" />
+                                                )}
+                                                {roundIndex === bracket.length - 2 && (
+                                                    <div className="absolute top-1/2 -right-10 h-px w-10 bg-border -translate-y-1/2"></div>
+                                                )}
+                                            </div>
+                                            ))}
+                                        </div>
+                                        </div>
+                                    ))}
+                                    </div>
+                                </ScrollArea>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center text-center p-8 border rounded-lg bg-muted/50 h-full">
+                                    <GitMerge className="h-12 w-12 text-muted-foreground" />
+                                    <p className="mt-4 text-muted-foreground">Add at least 2 players to generate a bracket.</p>
+                                </div>
+                            )}
+                        </div>
+                    </DialogContent>
+                </Dialog>
+                </CardFooter>
+            </Card>
+            ))}
+        </div>
+      )}
     </div>
   );
 }

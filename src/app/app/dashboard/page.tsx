@@ -1,9 +1,8 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { tournaments as initialTournaments } from "@/lib/data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,10 +51,9 @@ import {
 } from "@/components/ui/tooltip"
 import { collection, onSnapshot, addDoc, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useEffect } from 'react';
 
 export default function DashboardPage() {
-  const { players, updatePlayerStats, loading: playersLoading } = usePlayers();
+  const { players, updatePlayerStats } = usePlayers();
   const [games, setGames] = useState<Game[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -66,7 +64,19 @@ export default function DashboardPage() {
     const gamesQuery = query(collection(db, "games"), orderBy("date", "desc"), limit(5));
     const gamesUnsubscribe = onSnapshot(gamesQuery, (snapshot) => {
       const gamesData: Game[] = [];
-      snapshot.forEach(doc => gamesData.push({ id: doc.id, ...doc.data() } as Game));
+      snapshot.forEach(doc => {
+          const data = doc.data();
+          const player1 = players.find(p => p.id === data.player1Id);
+          const player2 = players.find(p => p.id === data.player2Id);
+          if (player1 && player2) {
+            gamesData.push({ 
+                id: doc.id, 
+                ...data,
+                player1,
+                player2
+            } as Game);
+          }
+      });
       setGames(gamesData);
     });
 
@@ -82,7 +92,7 @@ export default function DashboardPage() {
       gamesUnsubscribe();
       tournamentsUnsubscribe();
     };
-  }, []);
+  }, [players]);
 
   const handleLogGame = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -114,14 +124,12 @@ export default function DashboardPage() {
     await updatePlayerStats(player1Id, player2Id, score1, score2);
     
     const newGame = {
-      player1,
-      player2,
       player1Id,
       player2Id,
       score1,
       score2,
       date: new Date().toISOString(),
-      tournamentId: tournamentIdStr && tournamentIdStr !== 'exhibition' ? tournamentIdStr : undefined
+      tournamentId: tournamentIdStr && tournamentIdStr !== 'exhibition' ? tournamentIdStr : null
     };
     
     await addDoc(collection(db, 'games'), newGame);
@@ -354,5 +362,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-    
