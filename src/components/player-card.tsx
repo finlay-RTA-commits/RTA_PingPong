@@ -24,9 +24,9 @@ export function PlayerCard({ player }: PlayerCardProps) {
             <div>
               <CardTitle className="text-2xl font-bold text-primary flex items-center gap-2">
                 {player.name}
-                {player.tournamentsWon && player.tournamentsWon > 0 && (
+                {player.tournamentsWon && player.tournamentsWon > 0 ? (
                   <Trophy className="h-6 w-6 text-amber-400" />
-                )}
+                ) : null}
               </CardTitle>
               <p className="font-semibold text-muted-foreground">Rank: #{player.rank}</p>
             </div>
