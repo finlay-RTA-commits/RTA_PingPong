@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from "next/image";
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Button } from "@/components/ui/button";
 import {
@@ -45,11 +45,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar, PlusCircle, Users, GitMerge, Edit, Trash2, UserX } from "lucide-react";
-import type { Tournament, Player } from '@/lib/types';
+import type { Tournament, Player, Game } from '@/lib/types';
 import { usePlayers } from '@/hooks/use-players';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 
 interface BracketRound {
@@ -106,6 +107,7 @@ const generateBracket = (participants: Player[]): BracketRound[] => {
 export default function TournamentsPage() {
   const { players } = usePlayers();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [tournamentGames, setTournamentGames] = useState<Game[]>([]);
   const [isCreateOrEditOpen, setCreateOrEditOpen] = useState(false);
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
@@ -126,6 +128,15 @@ export default function TournamentsPage() {
         toast({variant: 'destructive', title: 'Error', description: 'Could not fetch tournaments.'});
         setLoading(false);
     });
+    
+    // Fetch all games to check tournament progress
+    getDocs(collection(db, "games")).then(snapshot => {
+        const gamesData: Game[] = [];
+        snapshot.forEach(doc => gamesData.push({ id: doc.id, ...doc.data() } as Game));
+        setTournamentGames(gamesData);
+    });
+
+
     return () => unsubscribe();
   }, [toast]);
   
@@ -220,10 +231,24 @@ export default function TournamentsPage() {
         });
     }
   };
+
+  const enrolledPlayers = useMemo(() => selectedTournament ? players.filter(p => selectedTournament.enrolledPlayerIds.includes(p.id)) : [], [players, selectedTournament]);
+  const availablePlayers = useMemo(() => selectedTournament ? players.filter(p => !selectedTournament.enrolledPlayerIds.includes(p.id)) : [], [players, selectedTournament]);
+  const bracket = useMemo(() => selectedTournament ? generateBracket(enrolledPlayers) : [], [selectedTournament, enrolledPlayers]);
   
-  const enrolledPlayers = selectedTournament ? players.filter(p => selectedTournament.enrolledPlayerIds.includes(p.id)) : [];
-  const availablePlayers = selectedTournament ? players.filter(p => !selectedTournament.enrolledPlayerIds.includes(p.id)) : [];
-  const bracket = selectedTournament ? generateBracket(enrolledPlayers) : [];
+  const hasMatchBeenPlayed = (tournamentId: string, player1Id: string | undefined, player2Id: string | undefined) => {
+      if (!player1Id || !player2Id) return true; // BYE rounds are considered "played"
+      return tournamentGames.some(g => g.tournamentId === tournamentId && 
+          ((g.player1Id === player1Id && g.player2Id === player2Id) || (g.player1Id === player2Id && g.player2Id === player1Id))
+      );
+  };
+  
+  const isDisqualified = (tournamentDate: string) => {
+      const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+      const tournamentStartDate = new Date(tournamentDate).getTime();
+      const now = new Date().getTime();
+      return now - tournamentStartDate > THREE_DAYS;
+  }
 
   return (
     <div className="space-y-6">
@@ -395,20 +420,25 @@ export default function TournamentsPage() {
                                         <div key={roundIndex} className="flex flex-col space-y-4">
                                         <h3 className="font-bold text-center">{round.title}</h3>
                                         <div className="flex flex-col justify-around min-h-full space-y-16">
-                                            {round.seeds.map((match, matchIndex) => (
-                                            <div key={matchIndex} className="relative">
-                                                <div className="flex flex-col space-y-2">
-                                                    <div className="border p-2 rounded-md bg-muted/50 w-48 text-sm">{match[0]?.name ?? 'BYE'}</div>
-                                                    <div className="border p-2 rounded-md bg-muted/50 w-48 text-sm">{match[1]?.name ?? (match[0] ? 'BYE' : 'TBD')}</div>
+                                            {round.seeds.map((match, matchIndex) => {
+                                                const matchPlayed = hasMatchBeenPlayed(selectedTournament!.id, match[0]?.id, match[1]?.id);
+                                                const dq = !matchPlayed && isDisqualified(selectedTournament!.date);
+
+                                                return (
+                                                <div key={matchIndex} className="relative">
+                                                    <div className="flex flex-col space-y-2">
+                                                        <div className={cn("border p-2 rounded-md bg-muted/50 w-48 text-sm", dq && "line-through opacity-50")}>{match[0]?.name ?? 'BYE'}</div>
+                                                        <div className={cn("border p-2 rounded-md bg-muted/50 w-48 text-sm", dq && "line-through opacity-50")}>{match[1]?.name ?? (match[0] ? 'BYE' : 'TBD')}</div>
+                                                    </div>
+                                                    {roundIndex < bracket.length - 2 && (
+                                                        <div className="absolute top-1/2 -right-10 h-[calc(100%_+_4rem)] w-10 border-r border-b border-border -translate-y-[calc(50%_-_(50%_/_2)_*_${matchIndex%2 === 0 ? 1 : -1})]" />
+                                                    )}
+                                                    {roundIndex === bracket.length - 2 && (
+                                                        <div className="absolute top-1/2 -right-10 h-px w-10 bg-border -translate-y-1/2"></div>
+                                                    )}
                                                 </div>
-                                                {roundIndex < bracket.length - 2 && (
-                                                    <div className="absolute top-1/2 -right-10 h-[calc(100%_+_4rem)] w-10 border-r border-b border-border -translate-y-[calc(50%_-_(50%_/_2)_*_${matchIndex%2 === 0 ? 1 : -1})]" />
-                                                )}
-                                                {roundIndex === bracket.length - 2 && (
-                                                    <div className="absolute top-1/2 -right-10 h-px w-10 bg-border -translate-y-1/2"></div>
-                                                )}
-                                            </div>
-                                            ))}
+                                                )
+                                            })}
                                         </div>
                                         </div>
                                     ))}

@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trophy, Calendar, Plus, ArrowRight } from "lucide-react";
+import { Trophy, Calendar, Plus, ArrowRight, Hourglass } from "lucide-react";
 import type { Player, Game, Tournament } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { usePlayers } from '@/hooks/use-players';
@@ -57,7 +57,16 @@ export default function DashboardPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const { toast } = useToast();
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+        setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     // Fetch recent games
@@ -138,6 +147,19 @@ export default function DashboardPage() {
 
     toast({ title: 'Game Logged', description: `${player1.name} vs ${player2.name} has been recorded.` });
   };
+  
+  const getCountdown = (date: string) => {
+      const tournamentDate = new Date(date);
+      const diff = tournamentDate.getTime() - currentTime.getTime();
+
+      if (diff <= 0) {
+          return <span className="text-primary font-semibold">In Progress</span>;
+      }
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+
+      return <span className="font-semibold text-accent">{hours} hours to go</span>;
+  }
 
 
   return (
@@ -201,9 +223,13 @@ export default function DashboardPage() {
               <div key={tournament.id} className="flex items-center justify-between rounded-lg border p-4">
                 <div>
                     <h3 className="font-semibold">{tournament.name}</h3>
-                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                         <Calendar className="h-4 w-4" />
                         {new Date(tournament.date).toLocaleDateString()}
+                    </p>
+                    <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                        <Hourglass className="h-4 w-4" />
+                        {getCountdown(tournament.date)}
                     </p>
                 </div>
                 <Button variant="secondary" asChild><Link href="/app/tournaments">View Details</Link></Button>
