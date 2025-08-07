@@ -39,6 +39,7 @@ const prompt = ai.definePrompt({
     {{#each players}}
     - Name: {{name}}
     - Rank: {{rank}}
+    - Elo: {{stats.elo}}
     - Wins: {{wins}}
     - Losses: {{losses}}
     - Win Streak: {{stats.winStreak}}
@@ -48,7 +49,7 @@ const prompt = ai.definePrompt({
 
     Analyze the provided stats for the two players in the upcoming match: {{{player1Name}}} vs. {{{player2Name}}}.
 
-    Based on your analysis, predict a winner, provide the fractional style betting odds, and give a brief reasoning for your prediction.
+    Based on your analysis, predict a winner, provide the fractional style betting odds, and give a brief reasoning for your prediction. The Elo rating is the primary indicator of skill.
   `,
 });
 

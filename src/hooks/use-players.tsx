@@ -24,6 +24,15 @@ const reRankPlayers = (players: Player[]): Player[] => {
         .map((p, index) => ({...p, rank: index + 1}));
 }
 
+// Elo Calculation Constants
+const K_FACTOR = 32;
+const DEFAULT_ELO = 1000;
+
+const calculateExpectedScore = (playerElo: number, opponentElo: number) => {
+    return 1 / (1 + Math.pow(10, (opponentElo - playerElo) / 400));
+};
+
+
 export const PlayerProvider = ({ children }: { children: ReactNode }) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,6 +81,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
                 winStreak: 0,
                 rival: 'N/A',
                 highestStreak: 0,
+                elo: DEFAULT_ELO,
             },
             tournamentsWon: 0,
             uid: uid || null 
@@ -106,11 +116,34 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
     const batch = writeBatch(db);
     const allPlayers = players; 
     
-    // Fetch all games to calculate stats
+    const player1 = allPlayers.find(p => p.id === player1Id);
+    const player2 = allPlayers.find(p => p.id === player2Id);
+    
+    if(!player1 || !player2) {
+      console.error("One or both players not found for stat update.");
+      return;
+    }
+
+    // --- ELO Calculation ---
+    const player1Elo = player1.stats?.elo ?? DEFAULT_ELO;
+    const player2Elo = player2.stats?.elo ?? DEFAULT_ELO;
+
+    const player1Expected = calculateExpectedScore(player1Elo, player2Elo);
+    const player2Expected = calculateExpectedScore(player2Elo, player1Elo);
+    
+    const player1Won = score1 > score2;
+    const player1ActualScore = player1Won ? 1 : 0;
+    const player2ActualScore = player1Won ? 0 : 1;
+
+    const newPlayer1Elo = Math.round(player1Elo + K_FACTOR * (player1ActualScore - player1Expected));
+    const newPlayer2Elo = Math.round(player2Elo + K_FACTOR * (player2ActualScore - player2Expected));
+
+
+    // Fetch all games to calculate other stats
     const gamesSnapshot = await getDocs(query(collection(db, "games"), orderBy("date", "asc")));
     const allGames = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Game));
 
-    const processPlayer = (playerId: string, ownScore: number, opponentScore: number, opponentId: string) => {
+    const processPlayer = (playerId: string, ownScore: number, opponentScore: number, opponentId: string, newElo: number) => {
       const player = allPlayers.find(p => p.id === playerId);
       if (!player) return;
 
@@ -185,12 +218,13 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
           winStreak: currentStreak,
           highestStreak: highestStreak,
           rival: rival,
+          elo: newElo,
         }
       });
     };
 
-    processPlayer(player1Id, score1, score2, player2Id);
-    processPlayer(player2Id, score2, score1, player1Id);
+    processPlayer(player1Id, score1, score2, player2Id, newPlayer1Elo);
+    processPlayer(player2Id, score2, score1, player1Id, newPlayer2Elo);
 
     try {
       await batch.commit();

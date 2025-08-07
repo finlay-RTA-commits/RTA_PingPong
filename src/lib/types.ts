@@ -18,6 +18,7 @@ export type PlayerStats = {
   winStreak: number;
   rival: string;
   highestStreak: number;
+  elo: number;
 };
 
 export type Game = {

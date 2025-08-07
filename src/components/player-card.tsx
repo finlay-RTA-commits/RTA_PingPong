@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { Player } from '@/lib/types';
-import { Flame, Mail, Star, Swords, Trophy } from 'lucide-react';
+import { Flame, Mail, Star, Swords, Trophy, BarChart } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface PlayerCardProps {
@@ -66,6 +66,10 @@ export function PlayerCard({ player }: PlayerCardProps) {
         <Separator className="my-4" />
         <div className="space-y-3 text-sm">
             <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-muted-foreground"><BarChart className="h-4 w-4 text-primary" /> Elo Rating</span>
+                <span className="font-semibold">{player.stats?.elo ?? 1000}</span>
+            </div>
+             <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-muted-foreground"><Flame className="h-4 w-4 text-primary" /> Win Streak</span>
                 <span className="font-semibold">{player.stats?.winStreak ?? 0}</span>
             </div>
