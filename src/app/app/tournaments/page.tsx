@@ -109,6 +109,7 @@ export default function TournamentsPage() {
   const [isCreateOrEditOpen, setCreateOrEditOpen] = useState(false);
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+  const [playerToAdd, setPlayerToAdd] = useState<string>("");
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -127,6 +128,15 @@ export default function TournamentsPage() {
     });
     return () => unsubscribe();
   }, [toast]);
+  
+  useEffect(() => {
+    if (selectedTournament) {
+        const updatedTournament = tournaments.find(t => t.id === selectedTournament.id);
+        if (updatedTournament) {
+            setSelectedTournament(updatedTournament);
+        }
+    }
+  }, [tournaments, selectedTournament]);
 
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -177,10 +187,12 @@ export default function TournamentsPage() {
   }
 
   const handleAddPlayer = (tournamentId: string, playerId: string) => {
+     if (!playerId) return;
      const tournament = tournaments.find(t => t.id === tournamentId);
      if (tournament && !tournament.enrolledPlayerIds.includes(playerId)) {
          const newPlayerIds = [...tournament.enrolledPlayerIds, playerId];
          updateTournamentPlayers(tournamentId, newPlayerIds);
+         setPlayerToAdd(""); // Reset the select
      }
   }
 
@@ -354,7 +366,7 @@ export default function TournamentsPage() {
                         <div className="flex flex-col gap-4 border-r pr-6">
                             <h3 className="font-semibold text-lg">Participants ({enrolledPlayers.length})</h3>
                             <div className="flex gap-2">
-                                    <Select onValueChange={(playerId) => handleAddPlayer(selectedTournament!.id, playerId)}>
+                                    <Select value={playerToAdd} onValueChange={(playerId) => handleAddPlayer(selectedTournament!.id, playerId)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Add Player" />
                                         </SelectTrigger>
