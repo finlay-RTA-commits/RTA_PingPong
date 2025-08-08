@@ -47,7 +47,7 @@ export default function LeaderboardPage() {
         <Tabs defaultValue="wins">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="wins">
-                <Trophy className="mr-2" /> Rank by Wins
+                <Trophy className="mr-2" /> RTA Leaderboard
             </TabsTrigger>
             <TabsTrigger value="elo">
                 <BarChart className="mr-2" /> Rank by Elo
