@@ -77,6 +77,14 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
     while (seededPlayers.length < idealSize) {
         seededPlayers.push({ name: 'BYE' });
     }
+    
+    // Shuffle for initial pairings beyond simple seeding
+    const round1Pairings: BracketPlayer[] = [];
+    const mid = seededPlayers.length / 2;
+    for (let i = 0; i < mid; i++) {
+        round1Pairings.push(seededPlayers[i]);
+        round1Pairings.push(seededPlayers[seededPlayers.length - 1 - i]);
+    }
 
     const findWinner = (p1: BracketPlayer, p2: BracketPlayer): BracketPlayer | null => {
         if (!p1 || !p2) return null;
@@ -88,7 +96,7 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
         if ('id' in p1 && 'id' in p2) {
             const game = games.find(g =>
                 g.tournamentId === tournamentId &&
-                ((g.player1Id === p1.id && g.player2Id === p2.id) || (g.player1Id === p2.id && g.player2Id === p1.id))
+                ((g.player1Id === p1.id && g.player2Id === p2.id) || (g.player1Id === p2.id && g.player1Id === p1.id))
             );
             if (game) {
                 const winnerId = game.score1 > game.score2 ? game.player1Id : game.player2Id;
@@ -99,7 +107,7 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
     };
 
     const rounds: BracketRound[] = [];
-    let currentPlayers = seededPlayers;
+    let currentPlayers = round1Pairings;
     
     const round1: BracketRound = { title: `Round 1`, matches: [] };
     for (let i = 0; i < currentPlayers.length; i += 2) {
@@ -152,7 +160,7 @@ const PlayerBox = ({ player }: { player: BracketPlayer }) => {
     
     return (
         <div className={cn(
-            "bg-card text-card-foreground px-3 py-1 text-sm border border-border w-48",
+            "bg-card text-card-foreground px-3 py-1.5 text-sm",
             isBye && 'text-muted-foreground italic'
         )}>
             {name}
@@ -160,38 +168,27 @@ const PlayerBox = ({ player }: { player: BracketPlayer }) => {
     );
 };
 
-const MatchComponent = ({ match, isFinal, isWinnerDisplay }: { match: Match, isFinal: boolean, isWinnerDisplay: boolean }) => {
-  if (isWinnerDisplay) {
+const MatchBox = ({ match }: { match: Match }) => {
+    if (!match.p2) { // Winner display
+        return (
+            <div className="flex flex-col items-center">
+                <Trophy className="w-10 h-10 text-amber-400 mb-2"/>
+                 <div className="border border-amber-400 rounded-md shadow-lg">
+                    <PlayerBox player={match.p1} />
+                </div>
+            </div>
+        )
+    }
+
     return (
-      <div className="flex flex-col items-center justify-center">
-        <Trophy className="w-10 h-10 text-amber-400 mb-2"/>
-        <PlayerBox player={match.winner} />
-      </div>
+        <div className="flex flex-col border border-border rounded-md shadow-sm bg-background">
+            <PlayerBox player={match.p1} />
+            <div className="border-t border-border">
+                <PlayerBox player={match.p2} />
+            </div>
+        </div>
     );
-  }
-  
-  return (
-    <div className="flex items-center">
-      <div className="flex flex-col gap-2">
-        <PlayerBox player={match.p1} />
-        {match.p2 && <PlayerBox player={match.p2} />}
-      </div>
-      <div className="w-6 h-full border-y-2 border-r-2 border-border -ml-[2px] rounded-r-md" style={{ height: match.p2 ? '50%' : '0' }}></div>
-    </div>
-  );
-};
-
-
-const BracketColumn = ({ round, isFinal, isWinnerDisplay, isFirst }: { round: BracketRound, isFinal: boolean, isWinnerDisplay: boolean, isFirst: boolean }) => (
-  <div className="flex flex-col justify-around h-full">
-    {round.matches.map((match, index) => (
-      <div key={index} className="flex items-center">
-        {!isFirst && <div className="w-6 h-[2px] bg-border"></div>}
-        <MatchComponent match={match} isFinal={isFinal} isWinnerDisplay={isWinnerDisplay} />
-      </div>
-    ))}
-  </div>
-);
+}
 
 
 export default function TournamentsPage() {
@@ -525,23 +522,20 @@ export default function TournamentsPage() {
                                 </div>
                             </ScrollArea>
                         </div>
-                        <div className="flex justify-center items-center w-full h-full">
+                        <div className="flex-1 overflow-auto p-4">
                           {bracketRounds.length > 0 ? (
-                            <ScrollArea className="h-full w-full">
-                                <div className="flex justify-center p-4">
-                                    <div className="inline-flex items-start gap-8">
-                                        {bracketRounds.map((round, roundIndex) => (
-                                          <BracketColumn 
-                                            key={roundIndex}
-                                            round={round}
-                                            isFinal={round.title === 'Final'}
-                                            isWinnerDisplay={round.title === 'Winner'}
-                                            isFirst={roundIndex === 0}
-                                          />
-                                        ))}
-                                    </div>
-                                </div>
-                            </ScrollArea>
+                            <div className="flex justify-center w-full h-full">
+                              <div className="inline-flex items-start gap-x-12">
+                                {bracketRounds.map((round, roundIndex) => (
+                                  <div key={roundIndex} className="flex flex-col justify-around h-full w-48 space-y-4">
+                                    <h4 className="text-center font-bold text-lg mb-4">{round.title}</h4>
+                                    {round.matches.map((match, matchIndex) => (
+                                      <MatchBox key={matchIndex} match={match} />
+                                    ))}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           ) : (
                               <div className="flex flex-col items-center justify-center text-center p-8 border rounded-lg bg-muted/50 h-full w-full">
                                   <GitMerge className="h-12 w-12 text-muted-foreground" />
@@ -560,3 +554,5 @@ export default function TournamentsPage() {
     </div>
   );
 }
+
+    
