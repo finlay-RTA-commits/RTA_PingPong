@@ -34,7 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -73,10 +73,19 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
         idealSize *= 2;
     }
 
-    const seededPlayers: BracketPlayer[] = [...participants].sort(() => Math.random() - 0.5);
+    let seededPlayers: BracketPlayer[] = [...participants];
+     // Simple seeding for now, can be replaced with a real seeding algorithm
+    seededPlayers.sort(() => Math.random() - 0.5);
+
     while (seededPlayers.length < idealSize) {
         seededPlayers.push({ name: 'BYE' });
     }
+    
+    // Un-seed the players for a standard bracket flow
+    const p = seededPlayers;
+    const order = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].slice(0, p.length);
+    const reorderedPlayers = order.map(i => p[i]);
+
 
     const findWinner = (p1: BracketPlayer, p2: BracketPlayer): BracketPlayer | null => {
         if (!p1 || !p2) return null;
@@ -101,7 +110,7 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
     };
     
     const rounds: BracketRound[] = [];
-    let currentRoundPlayers = seededPlayers;
+    let currentRoundPlayers = reorderedPlayers;
     let roundNum = 1;
 
     while (currentRoundPlayers.length > 1) {
@@ -112,40 +121,39 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
         
         const currentRound: BracketRound = { title: roundTitle, matches: [] };
         const nextRoundPlayers: BracketPlayer[] = [];
-
+        
         for(let i = 0; i < currentRoundPlayers.length; i += 2) {
             const p1 = currentRoundPlayers[i];
             const p2 = currentRoundPlayers[i+1];
             const winner = findWinner(p1, p2);
             currentRound.matches.push({p1, p2, winner});
-            nextRoundPlayers.push(winner || { name: 'TBD' });
+            nextRoundPlayers.push(winner);
         }
 
         rounds.push(currentRound);
-        currentRoundPlayers = nextRoundPlayers;
+        currentRoundPlayers = nextRoundPlayers.map(p => p || { name: 'TBD' });
         roundNum++;
     }
-
-    const finalMatch = rounds[rounds.length - 1]?.matches[0];
-    if (finalMatch && findWinner(finalMatch.p1, finalMatch.p2)) {
-        rounds.push({
-            title: 'Winner',
-            matches: [{ p1: findWinner(finalMatch.p1, finalMatch.p2), p2: null, winner: findWinner(finalMatch.p1, finalMatch.p2) }]
-        });
-    }
+    
+     const finalMatch = rounds[rounds.length-1]?.matches[0];
+     if(finalMatch && finalMatch.winner) {
+         rounds.push({
+             title: 'Winner',
+             matches: [{ p1: finalMatch.winner, p2: null, winner: finalMatch.winner }]
+         });
+     }
 
     return rounds;
 };
 
 
-const PlayerBox = ({ player, isWinner }: { player: BracketPlayer, isWinner: boolean }) => {
+const PlayerBox = ({ player }: { player: BracketPlayer }) => {
     const name = player?.name ?? 'TBD';
     const isBye = name === 'BYE';
     return (
         <div className={cn(
-            "border p-2 rounded-md bg-muted/50 text-sm w-48 text-foreground",
-            isWinner && "font-bold border-primary text-primary",
-            isBye && "bg-transparent border-transparent text-muted-foreground italic"
+            "bg-muted/50 text-sm w-48 text-foreground px-4 py-2",
+             isBye && "bg-transparent text-muted-foreground italic"
         )}>
             {name}
         </div>
@@ -153,23 +161,16 @@ const PlayerBox = ({ player, isWinner }: { player: BracketPlayer, isWinner: bool
 };
 
 const MatchComponent = ({ match }: { match: Match }) => {
-    const isP1Winner = match.winner && match.p1 && match.p1.name !== 'BYE' && 'id' in match.p1 && 'id' in match.winner && match.winner.id === match.p1.id;
-    const isP2Winner = match.winner && match.p2 && match.p2.name !== 'BYE' && 'id' in match.p2 && 'id' in match.winner && match.winner.id === match.p2.id;
-    
     return (
-      <div className="relative flex flex-col justify-center">
-        <PlayerBox player={match.p1} isWinner={!!isP1Winner} />
-        <div className="h-4" /> 
-        <PlayerBox player={match.p2} isWinner={!!isP2Winner} />
-
-        {/* This creates the lines connecting the two players and the outgoing line */}
-        <div className="absolute top-1/2 left-full h-full w-8">
-            {/* Vertical line connecting player boxes */}
-            <div className="absolute top-[-50%] left-0 h-full w-px bg-border -translate-y-[2px]" />
-             {/* Horizontal line pointing to next round */}
-            <div className="absolute top-1/2 left-0 h-px w-full bg-border -translate-y-px" />
+        <div className="relative flex flex-col justify-center items-start">
+            <div className="flex flex-col border border-border rounded-lg overflow-hidden">
+                <PlayerBox player={match.p1} />
+                <div className="border-t border-border w-full" />
+                <PlayerBox player={match.p2} />
+            </div>
+            {/* Connector line */}
+            <div className="absolute left-full top-1/2 w-8 h-px bg-border -translate-y-px" />
         </div>
-      </div>
     );
 };
 
@@ -509,20 +510,34 @@ export default function TournamentsPage() {
                         </div>
                            {bracketRounds.length > 0 ? (
                                 <ScrollArea className="h-full">
-                                    <div className="flex items-start p-4 space-x-12">
+                                    <div className="flex items-start p-4 space-x-16">
                                         {bracketRounds.map((round, roundIndex) => (
                                             <div key={roundIndex} className="flex flex-col items-center flex-shrink-0">
                                                 <h3 className="font-bold text-lg text-center mb-8 w-48">{round.title}</h3>
-                                                <div className="flex flex-col justify-around flex-1 w-full space-y-10">
+                                                <div className={cn("flex flex-col flex-1 w-full", round.title !== 'Winner' && 'justify-around' )}>
                                                     {round.title === 'Winner' && round.matches[0].winner ? (
                                                         <div className="flex flex-col items-center gap-2">
                                                             <Trophy className="w-10 h-10 text-amber-400"/>
-                                                            <PlayerBox player={round.matches[0].winner} isWinner={true} />
+                                                            <div className="border border-border rounded-lg overflow-hidden">
+                                                              <PlayerBox player={round.matches[0].winner} />
+                                                            </div>
                                                         </div>
                                                     ) : (
-                                                        round.matches.map((match, matchIndex) => (
-                                                          <MatchComponent key={matchIndex} match={match} />
-                                                        ))
+                                                      <div className="flex flex-col justify-around flex-1 gap-y-10">
+                                                        {round.matches.map((match, matchIndex) => (
+                                                          <div key={matchIndex} className="relative">
+                                                            <MatchComponent match={match} />
+                                                            {/* Vertical connector from match to the main line */}
+                                                            {roundIndex < bracketRounds.length -1 && round.title !== 'Winner' && (
+                                                              <div className="absolute top-1/2 left-[calc(100%+2rem)] w-px h-[calc(50%+2.5rem)] bg-border" style={{top: matchIndex % 2 === 0 ? '50%' : 'auto', bottom: matchIndex % 2 !== 0 ? '50%' : 'auto'}} />
+                                                            )}
+                                                            {/* Horizontal connector linking vertical lines from two matches */}
+                                                            {matchIndex % 2 !== 0 && round.title !== 'Winner' && (
+                                                               <div className="absolute left-[calc(100%+2rem)] top-[-2.5rem] w-8 h-px bg-border" />
+                                                            )}
+                                                          </div>
+                                                        ))}
+                                                      </div>
                                                     )}
                                                 </div>
                                             </div>
@@ -546,5 +561,3 @@ export default function TournamentsPage() {
     </div>
   );
 }
-
-    
