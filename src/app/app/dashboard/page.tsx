@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/tooltip"
 import { collection, onSnapshot, addDoc, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { OnboardingModal } from '@/components/onboarding-modal';
 
 export default function DashboardPage() {
   const { players, updatePlayerStats } = usePlayers();
@@ -58,7 +59,16 @@ export default function DashboardPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
+    if (!hasSeenOnboarding) {
+      setShowOnboarding(true);
+      localStorage.setItem('hasSeenOnboarding', 'true');
+    }
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -165,6 +175,7 @@ export default function DashboardPage() {
 
   return (
     <>
+    <OnboardingModal open={showOnboarding} onOpenChange={setShowOnboarding} />
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <Card className="lg:col-span-1 flex flex-col">
         <CardHeader>
