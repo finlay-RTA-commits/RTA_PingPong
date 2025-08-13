@@ -127,11 +127,10 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
 
         if (nextRound.matches.length === 1) {
             nextRound.title = 'Final';
-        } else if (nextRound.matches.length <= 4 && nextRound.matches.length > 1) {
+        } else if (nextRound.matches.length === 2) {
            nextRound.title = 'Semi-Finals';
-           if(nextRound.matches.length <= 2) {
-                nextRound.title = 'Quarter-Finals';
-           }
+        } else if (nextRound.matches.length === 4) {
+           nextRound.title = 'Quarter-Finals';
         }
         
         rounds.push(nextRound);
@@ -156,8 +155,8 @@ const PlayerBox = ({ player, isWinner }: { player: BracketPlayer, isWinner: bool
     
     return (
         <div className={cn(
-            "bg-card text-card-foreground px-4 py-2 w-48 text-sm",
-            isWinner && 'font-bold text-primary',
+            "bg-card text-card-foreground px-4 py-2 w-48 text-sm border border-border",
+            isWinner && 'font-bold border-primary',
             isBye && 'text-muted-foreground italic'
         )}>
             {name}
@@ -165,12 +164,29 @@ const PlayerBox = ({ player, isWinner }: { player: BracketPlayer, isWinner: bool
     );
 };
 
-const MatchComponent = ({ match }: { match: Match }) => {
+const MatchComponent = ({ match, isFinalRound, isWinnerDisplay }: { match: Match, isFinalRound: boolean, isWinnerDisplay: boolean }) => {
+    if (isWinnerDisplay) {
+        return (
+             <div className="flex flex-col items-center gap-2">
+                <Trophy className="w-10 h-10 text-amber-400"/>
+                <PlayerBox player={match.p1} isWinner={true} />
+            </div>
+        )
+    }
+
     return (
-        <div className="flex flex-col border border-border rounded-lg overflow-hidden">
-            <PlayerBox player={match.p1} isWinner={match.winner?.name === match.p1?.name} />
-            <div className="border-t border-border w-full" />
-            <PlayerBox player={match.p2} isWinner={match.winner?.name === match.p2?.name} />
+        <div className="flex items-center">
+            <div className="flex flex-col gap-2">
+                <PlayerBox player={match.p1} isWinner={match.winner?.name === match.p1?.name} />
+                {match.p2 && <PlayerBox player={match.p2} isWinner={match.winner?.name === match.p2?.name} />}
+            </div>
+            {!isFinalRound && (
+                 <div className="flex items-center h-[76px]">
+                     <div className="w-6 h-px bg-border"></div>
+                     <div className="w-px h-full bg-border"></div>
+                     <div className="w-6 h-px bg-border"></div>
+                 </div>
+            )}
         </div>
     );
 };
@@ -339,8 +355,6 @@ export default function TournamentsPage() {
     const tournamentSpecificGames = tournamentGames.filter(g => g.tournamentId === selectedTournament.id);
     return generateBracket(enrolledPlayers, tournamentSpecificGames, selectedTournament.id);
   }, [selectedTournament, enrolledPlayers, tournamentGames]);
-  
-  const winner = bracketRounds.find(r => r.title === 'Winner')?.matches[0]?.winner;
 
   return (
     <div className="space-y-6">
@@ -512,24 +526,18 @@ export default function TournamentsPage() {
                         {bracketRounds.length > 0 ? (
                            <div className="flex justify-center w-full h-full">
                                 <ScrollArea className="h-full w-full">
-                                    <div className="flex justify-center items-start p-4 space-x-16">
+                                    <div className="flex justify-center items-center p-4 space-x-8">
                                         {bracketRounds.map((round, roundIndex) => (
-                                            <div key={roundIndex} className="flex flex-col justify-around">
+                                            <div key={roundIndex} className="flex flex-col items-center justify-around space-y-4">
                                                 <h3 className="font-bold text-lg mb-4 w-48 text-center">{round.title}</h3>
-                                                <div className="space-y-10">
-                                                    {round.title === 'Winner' && round.matches[0].winner ? (
-                                                        <div className="flex flex-col items-center gap-2">
-                                                            <Trophy className="w-10 h-10 text-amber-400"/>
-                                                            <div className="border border-amber-400 rounded-lg overflow-hidden bg-amber-400/10">
-                                                                <PlayerBox player={round.matches[0].winner} isWinner={true} />
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        round.matches.map((match, index) => (
-                                                            <MatchComponent key={index} match={match} />
-                                                        ))
-                                                    )}
-                                                </div>
+                                                {round.matches.map((match, index) => (
+                                                    <MatchComponent 
+                                                        key={index} 
+                                                        match={match} 
+                                                        isFinalRound={round.matches.length === 1}
+                                                        isWinnerDisplay={round.title === 'Winner'}
+                                                    />
+                                                ))}
                                             </div>
                                         ))}
                                     </div>
@@ -552,5 +560,3 @@ export default function TournamentsPage() {
     </div>
   );
 }
-
-    
