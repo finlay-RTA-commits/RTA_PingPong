@@ -63,9 +63,10 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
             Here’s a quick tour to get you started.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 min-h-0 py-4">
+        
+        <div className="flex-1 py-4 min-h-0">
             <Carousel className="w-full h-full">
-            <CarouselContent className="h-full">
+            <CarouselContent>
                 <CarouselItem className="flex flex-col justify-center items-center">
                 <div className="p-4 text-center space-y-4">
                     <h3 className="font-semibold text-lg">App Navigation</h3>
@@ -125,8 +126,8 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                 </div>
                 </CarouselItem>
             </CarouselContent>
-            <CarouselPrevious className="left-2" />
-            <CarouselNext className="right-2" />
+            <CarouselPrevious className="-left-2" />
+            <CarouselNext className="-right-2" />
             </Carousel>
         </div>
 
