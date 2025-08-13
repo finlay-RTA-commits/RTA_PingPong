@@ -109,27 +109,27 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
     }
     rounds.push(round1);
 
-    // 3. Build subsequent rounds structurally
-    let previousRound = round1;
-    while (previousRound.matches.length > 1) {
+    // 3. Build subsequent rounds
+    let previousWinners: BracketPlayer[] = round1.matches.map(m => m.winner);
+    while (previousWinners.length > 1) {
         const currentRoundMatches: Match[] = [];
-        for (let i = 0; i < previousRound.matches.length; i += 2) {
-            const match1 = previousRound.matches[i];
-            const match2 = previousRound.matches[i + 1];
+        const nextRoundWinners: BracketPlayer[] = [];
 
-            const p1 = match1.winner;
-            const p2 = match2.winner;
-            let winner = null;
-            
+        for (let i = 0; i < previousWinners.length; i += 2) {
+            const p1 = previousWinners[i];
+            const p2 = previousWinners[i + 1];
+
+            let winner: BracketPlayer = null;
             if (p1 && 'id' in p1 && p2 && 'id' in p2) {
                 winner = findWinner(p1.id, p2.id);
             }
-
+            
             currentRoundMatches.push({
                 p1: p1 || { name: 'TBD' },
                 p2: p2 || { name: 'TBD' },
                 winner
             });
+            nextRoundWinners.push(winner);
         }
         
         const roundTitle = 
@@ -140,7 +140,7 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
             
         const currentRound = { title: roundTitle, matches: currentRoundMatches };
         rounds.push(currentRound);
-        previousRound = currentRound;
+        previousWinners = nextRoundWinners;
     }
 
     // 4. Add a final "Winner" round if the final match has a winner
@@ -503,7 +503,7 @@ export default function TournamentsPage() {
                                             <h3 className="font-bold text-center mb-4 text-lg">{round.title}</h3>
                                             <div className="flex flex-col" style={{ gap: `calc(var(--match-gap) + ${roundIndex > 0 ? (Math.pow(2, roundIndex) -1) * 2.75 : 0}rem)` }}>
                                                 {round.matches.map((match, matchIndex) => {
-                                                     const isWinnerRound = roundIndex === bracket.length - 1;
+                                                     const isWinnerRound = roundIndex === bracket.length - 1 && round.matches.length === 1 && match.p2 === null;
                                                      const p1IsWinner = match.winner && match.p1 && 'id' in match.p1 && 'id' in match.winner && match.winner.id === match.p1.id;
                                                      const p2IsWinner = match.winner && match.p2 && 'id' in match.p2 && 'id' in match.winner && match.winner.id === match.p2.id;
                                                      
@@ -516,7 +516,7 @@ export default function TournamentsPage() {
                                                             </div>
                                                           
                                                             {/* Connectors */}
-                                                            {!isWinnerRound && round.matches.length > 1 && (
+                                                            {!isWinnerRound && roundIndex < bracket.length - 1 && (
                                                                 <>
                                                                     {/* Line from match to the horizontal connector */}
                                                                     <div className="absolute left-full top-1/2 -translate-y-1/2 h-px w-[calc(var(--round-gap)/2)] bg-border"></div>
@@ -528,9 +528,18 @@ export default function TournamentsPage() {
                                                                             style={{ height: `calc(100% + var(--match-gap) + ${roundIndex > 0 ? (Math.pow(2, roundIndex) -1) * 2.75 : 0}rem)` }}
                                                                         ></div>
                                                                     )}
+                                                                      {/* Horizontal line connecting the vertical line to the next round's match */}
+                                                                    {matchIndex % 2 === 0 && (
+                                                                        <div
+                                                                            className="absolute left-[calc(100%_+_calc(var(--round-gap)/2))] bg-border h-px"
+                                                                            style={{
+                                                                                width: `calc(var(--round-gap)/2)`,
+                                                                                top: `calc(50% + (100% + var(--match-gap) + ${roundIndex > 0 ? (Math.pow(2, roundIndex) - 1) * 2.75 : 0}rem) / 2)`
+                                                                            }}
+                                                                        ></div>
+                                                                    )}
                                                                 </>
                                                             )}
-
                                                         </div>
                                                     )
                                                 })}
