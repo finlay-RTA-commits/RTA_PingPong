@@ -66,9 +66,7 @@ function DashboardPageContent() {
 
   useEffect(() => {
     const isNewUser = searchParams.get('new_user') === 'true';
-    const hasSeenOnboarding = typeof window !== 'undefined' ? localStorage.getItem('hasSeenOnboarding') : null;
-
-    if (isNewUser && !hasSeenOnboarding) {
+    if (isNewUser) {
       setShowOnboarding(true);
     }
   }, [searchParams]);
@@ -77,6 +75,8 @@ function DashboardPageContent() {
     setShowOnboarding(false);
     if (typeof window !== 'undefined') {
         localStorage.setItem('hasSeenOnboarding', 'true');
+        // Clean the URL
+        window.history.replaceState({}, document.title, window.location.pathname);
     }
   };
   
@@ -440,3 +440,5 @@ export default function DashboardPage() {
         </Suspense>
     )
 }
+
+    
