@@ -67,12 +67,12 @@ interface BracketRound {
 const generateBracket = (participants: Player[], games: Game[], tournamentId: string): BracketRound[] => {
     if (participants.length < 2) return [];
 
-    const findWinner = (p1: BracketPlayer, p2: BracketPlayer): BracketPlayer | null => {
-        if (!p1 || !p2 || !('id' in p1) || !('id' in p2)) return null;
-        
+    const findWinner = (p1Id: string | undefined, p2Id: string | undefined): BracketPlayer | null => {
+        if (!p1Id || !p2Id) return null;
+
         const game = games.find(g =>
             g.tournamentId === tournamentId &&
-            ((g.player1Id === p1.id && g.player2Id === p2.id) || (g.player1Id === p2.id && g.player2Id === p1.id))
+            ((g.player1Id === p1Id && g.player2Id === p2Id) || (g.player1Id === p2Id && g.player2Id === p1Id))
         );
 
         if (!game) return null;
@@ -86,49 +86,57 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
     while (idealSize < participants.length) {
         idealSize *= 2;
     }
-    const byes = idealSize - participants.length;
     
     // Seed players and add BYEs
-    const seededPlayers: BracketPlayer[] = [...participants].sort(() => Math.random() - 0.5);
+    let seededPlayers: BracketPlayer[] = [...participants].sort(() => Math.random() - 0.5);
+    const byes = idealSize - participants.length;
     for (let i = 0; i < byes; i++) {
-        // Distribute BYEs by adding them to the end of the list.
         seededPlayers.push({ name: 'BYE' });
     }
 
-    // 2. Build Round 1
     const rounds: BracketRound[] = [];
+    
+    // 2. Build Round 1
     const round1: BracketRound = { title: 'Round 1', matches: [] };
     for (let i = 0; i < seededPlayers.length; i += 2) {
         const p1 = seededPlayers[i];
         const p2 = seededPlayers[i+1];
         let winner: BracketPlayer = null;
 
-        if (p1?.name === 'BYE') winner = p2;
-        else if (p2?.name === 'BYE') winner = p1;
-        else winner = findWinner(p1, p2);
+        if (p1 && 'id' in p1 && p2 && 'id' in p2) {
+            winner = findWinner(p1.id, p2.id);
+        } else if (p2?.name === 'BYE') {
+            winner = p1;
+        } else if (p1?.name === 'BYE') {
+            winner = p2;
+        }
         
         round1.matches.push({ p1, p2, winner });
     }
     rounds.push(round1);
 
-    // 3. Build subsequent rounds based on the potential structure
-    let previousRound = round1;
-    while (previousRound.matches.length > 1) {
+    // 3. Build subsequent rounds
+    let previousRoundWinners: (BracketPlayer | null)[] = round1.matches.map(m => m.winner);
+
+    while (previousRoundWinners.length > 1) {
         const currentRoundMatches: Match[] = [];
-        for (let i = 0; i < previousRound.matches.length; i += 2) {
-            const match1 = previousRound.matches[i];
-            const match2 = previousRound.matches[i + 1];
+        const nextRoundWinners: (BracketPlayer | null)[] = [];
 
-            const p1 = match1.winner;
-            const p2 = match2.winner;
-
-            const winner = findWinner(p1, p2);
+        for (let i = 0; i < previousRoundWinners.length; i += 2) {
+            const p1 = previousRoundWinners[i];
+            const p2 = previousRoundWinners[i+1];
+            
+            let winner: BracketPlayer = null;
+            if (p1 && 'id' in p1 && p2 && 'id' in p2) {
+                winner = findWinner(p1.id, p2.id);
+            }
 
             currentRoundMatches.push({
                 p1: p1 || { name: 'TBD' },
                 p2: p2 || { name: 'TBD' },
                 winner: winner
             });
+            nextRoundWinners.push(winner);
         }
         
         const roundTitle = 
@@ -139,7 +147,7 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
             
         const currentRound = { title: roundTitle, matches: currentRoundMatches };
         rounds.push(currentRound);
-        previousRound = currentRound;
+        previousRoundWinners = nextRoundWinners;
     }
 
     // 4. Add a final "Winner" round if the final match has a winner
@@ -495,49 +503,26 @@ export default function TournamentsPage() {
                         </div>
                             {bracket.length > 0 ? (
                                 <ScrollArea className="h-full">
-                                    <div className="relative flex p-4" style={{'--round-gap': '5rem', '--match-gap': '4rem'} as React.CSSProperties}>
+                                    <div className="flex justify-start items-start p-4 space-x-8">
                                     {bracket.map((round, roundIndex) => (
-                                        <div key={roundIndex} className="flex flex-col justify-around" style={{ marginRight: 'var(--round-gap)' }}>
-                                            <h3 className="font-bold text-center mb-4 text-lg">{round.title}</h3>
-                                            <div className="flex flex-col justify-around flex-1">
+                                        <div key={roundIndex} className="flex flex-col items-center space-y-4">
+                                            <h3 className="font-bold text-lg">{round.title}</h3>
+                                            <div className="flex flex-col justify-around flex-1 space-y-12">
                                                 {round.matches.map((match, matchIndex) => {
-                                                     const isWinnerRound = roundIndex === bracket.length - 1 && round.matches.length === 1 && match.p2 === null;
-                                                     const p1IsWinner = match.winner && match.p1 && 'id' in match.p1 && 'id' in match.winner && match.winner.id === match.p1.id;
-                                                     const p2IsWinner = match.winner && match.p2 && 'id' in match.p2 && 'id' in match.winner && match.winner.id === match.p2.id;
-                                                     
-
+                                                    const p1IsWinner = match.winner && match.p1 && 'id' in match.p1 && 'id' in match.winner && match.winner.id === match.p1.id;
+                                                    const p2IsWinner = match.winner && match.p2 && 'id' in match.p2 && 'id' in match.winner && match.winner.id === match.p2.id;
+                                                    const isWinnerRound = round.title === 'Winner';
                                                     return (
-                                                        <div key={matchIndex} className="relative flex flex-col justify-center">
-                                                            <div className="flex flex-col space-y-2 z-10">
-                                                                <div className={cn("border p-2 rounded-md bg-muted/50 w-48 text-sm", p1IsWinner && 'font-bold border-primary', match.p1?.name === 'BYE' && 'opacity-0' )}>{match.p1?.name ?? 'TBD'}</div>
-                                                                {!isWinnerRound && <div className={cn("border p-2 rounded-md bg-muted/50 w-48 text-sm", p2IsWinner && 'font-bold border-primary', match.p2?.name === 'BYE' && 'opacity-0')}>{match.p2?.name ?? 'TBD'}</div>}
+                                                         <div key={matchIndex} className="flex items-center">
+                                                            <div className="flex flex-col space-y-2 w-48">
+                                                                <div className={cn("border p-2 rounded-md bg-muted/50 text-sm", p1IsWinner && 'font-bold border-primary', match.p1?.name === 'BYE' && 'opacity-0' )}>{match.p1?.name ?? 'TBD'}</div>
+                                                                {!isWinnerRound && <div className={cn("border p-2 rounded-md bg-muted/50 text-sm", p2IsWinner && 'font-bold border-primary', match.p2?.name === 'BYE' && 'opacity-0')}>{match.p2?.name ?? 'TBD'}</div>}
                                                             </div>
-                                                          
-                                                            {/* Connectors */}
-                                                            {!isWinnerRound && roundIndex < bracket.length - 1 && (
-                                                                <>
-                                                                    {/* Line from match to the horizontal connector */}
-                                                                    <div className="absolute left-full top-1/2 -translate-y-1/2 h-px w-[calc(var(--round-gap)/2)] bg-border"></div>
-
-                                                                    {/* Vertical line connecting to the next match's horizontal line */}
-                                                                    {matchIndex % 2 === 0 && (
-                                                                        <div
-                                                                            className="absolute left-[calc(100%_+_calc(var(--round-gap)/2))] top-1/2 w-px bg-border"
-                                                                            style={{ height: `calc(100% + ${Math.pow(2, roundIndex)} * 2.25rem + ${Math.pow(2, roundIndex-1)}rem)` }}
-                                                                        ></div>
-                                                                    )}
-                                                                      {/* Horizontal line connecting the vertical line to the next round's match */}
-                                                                    {matchIndex % 2 === 0 && (
-                                                                        <div
-                                                                            className="absolute left-[calc(100%_+_calc(var(--round-gap)/2))] bg-border h-px"
-                                                                            style={{
-                                                                                width: `calc(var(--round-gap)/2)`,
-                                                                                top: `calc(50% + (100% + ${Math.pow(2, roundIndex)} * 2.25rem + ${Math.pow(2, roundIndex-1)}rem) / 2)`
-                                                                            }}
-                                                                        ></div>
-                                                                    )}
-                                                                </>
-                                                            )}
+                                                            {!isWinnerRound && (
+                                                                <div className="w-8 h-px bg-border -ml-px relative">
+                                                                    <div className="absolute top-1/2 right-0 w-4 h-[calc(50%+1rem)] border-r border-t border-b border-border rounded-tr-md rounded-br-md -translate-y-1/2"></div>
+                                                                </div>
+                                                             )}
                                                         </div>
                                                     )
                                                 })}
