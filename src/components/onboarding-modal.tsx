@@ -99,31 +99,31 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                         </div>
                     </div>
                     </CarouselItem>
-                    <CarouselItem className="flex flex-col h-full justify-center">
-                    <div className="p-4 text-center space-y-4 flex flex-col flex-1 min-h-0">
-                        <h3 className="font-semibold text-lg">Unlock Achievements</h3>
-                        <p className="text-muted-foreground">
-                        Earn badges on your player card by completing challenges!
-                        </p>
-                        <div className="flex-1 min-h-0 pt-4">
-                            <ScrollArea className="h-[250px] w-full rounded-md border p-4">
-                                <div className="space-y-4 text-left">
-                                {achievements.map((ach) => {
-                                    const Icon = achievementIcons[ach.id];
-                                    return (
-                                    <div key={ach.id} className="flex items-start gap-3">
-                                        <Icon className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
-                                        <div>
-                                            <p className="font-semibold">{ach.name}</p>
-                                            <p className="text-sm text-muted-foreground">{ach.description}</p>
-                                        </div>
-                                    </div>
-                                    )
-                                })}
-                                </div>
-                            </ScrollArea>
-                        </div>
-                    </div>
+                    <CarouselItem className="flex flex-col h-full">
+                      <div className="p-4 text-center space-y-4 flex flex-col flex-1 min-h-0">
+                          <h3 className="font-semibold text-lg">Unlock Achievements</h3>
+                          <p className="text-muted-foreground">
+                          Earn badges on your player card by completing challenges!
+                          </p>
+                          <div className="flex-1 min-h-0 pt-4">
+                              <ScrollArea className="h-full w-full rounded-md border p-4">
+                                  <div className="space-y-4 text-left">
+                                  {achievements.map((ach) => {
+                                      const Icon = achievementIcons[ach.id];
+                                      return (
+                                      <div key={ach.id} className="flex items-start gap-3">
+                                          <Icon className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                                          <div>
+                                              <p className="font-semibold">{ach.name}</p>
+                                              <p className="text-sm text-muted-foreground">{ach.description}</p>
+                                          </div>
+                                      </div>
+                                      )
+                                  })}
+                                  </div>
+                              </ScrollArea>
+                          </div>
+                      </div>
                     </CarouselItem>
                 </CarouselContent>
                 <CarouselPrevious className="absolute -left-4 top-1/2 -translate-y-1/2" />
