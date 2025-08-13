@@ -73,7 +73,7 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
         idealSize *= 2;
     }
 
-    const seededPlayers: BracketPlayer[] = [...participants].sort((a, b) => (b.stats?.elo ?? 1000) - (b.stats?.elo ?? 1000));
+    const seededPlayers: BracketPlayer[] = [...participants].sort((a, b) => (b.stats?.elo ?? 1000) - (a.stats?.elo ?? 1000));
     while (seededPlayers.length < idealSize) {
         seededPlayers.push({ name: 'BYE' });
     }
@@ -100,7 +100,6 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
     const rounds: BracketRound[] = [];
     let currentPlayers = seededPlayers;
     
-    // Create Round 1
     const round1: BracketRound = { title: `Round 1`, matches: [] };
     for (let i = 0; i < currentPlayers.length; i += 2) {
         const p1 = currentPlayers[i];
@@ -516,20 +515,20 @@ export default function TournamentsPage() {
                             </ScrollArea>
                         </div>
                         {bracketRounds.length > 0 ? (
-                           <div className="flex justify-center w-full h-full">
+                           <div className="flex w-full h-full justify-center">
                                 <ScrollArea className="h-full w-full">
-                                    <div className="flex justify-center items-start p-4 space-x-16">
+                                    <div className="flex items-start justify-center p-4 gap-x-12">
                                         {bracketRounds.map((round, roundIndex) => (
                                             <div key={roundIndex} className="flex flex-col justify-around h-full space-y-6">
-                                                <h3 className="font-bold text-lg text-center">{round.title}</h3>
-                                                <div className="flex flex-col justify-around flex-grow space-y-10">
-                                                {round.matches.map((match, matchIndex) => (
-                                                    <MatchComponent 
-                                                        key={matchIndex} 
-                                                        match={match} 
-                                                        isWinnerDisplay={round.title === 'Winner'}
-                                                    />
-                                                ))}
+                                                <h3 className="font-bold text-lg text-center mb-4">{round.title}</h3>
+                                                <div className="flex flex-col justify-around flex-grow gap-y-10">
+                                                    {round.matches.map((match, matchIndex) => (
+                                                        <MatchComponent 
+                                                            key={matchIndex} 
+                                                            match={match} 
+                                                            isWinnerDisplay={round.title === 'Winner'}
+                                                        />
+                                                    ))}
                                                 </div>
                                             </div>
                                         ))}
@@ -553,3 +552,5 @@ export default function TournamentsPage() {
     </div>
   );
 }
+
+    
