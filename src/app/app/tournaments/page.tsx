@@ -96,7 +96,7 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
         if ('id' in p1 && 'id' in p2) {
             const game = games.find(g =>
                 g.tournamentId === tournamentId &&
-                ((g.player1Id === p1.id && g.player2Id === p2.id) || (g.player1Id === p2.id && g.player1Id === p1.id))
+                ((g.player1Id === p1.id && g.player2Id === p2.id) || (g.player1Id === p2.id && g.player2Id === p1.id))
             );
             if (game) {
                 const winnerId = game.score1 > game.score2 ? game.player1Id : game.player2Id;
@@ -522,19 +522,17 @@ export default function TournamentsPage() {
                                 </div>
                             </ScrollArea>
                         </div>
-                        <div className="flex-1 overflow-auto p-4">
+                        <div className="flex flex-1 items-center justify-center overflow-auto p-4">
                           {bracketRounds.length > 0 ? (
-                            <div className="flex justify-center w-full h-full">
-                              <div className="inline-flex items-start gap-x-12">
+                            <div className="inline-flex items-start gap-x-12">
                                 {bracketRounds.map((round, roundIndex) => (
-                                  <div key={roundIndex} className="flex flex-col justify-around h-full w-48 space-y-4">
+                                <div key={roundIndex} className="flex flex-col justify-around h-full w-48 space-y-4">
                                     <h4 className="text-center font-bold text-lg mb-4">{round.title}</h4>
                                     {round.matches.map((match, matchIndex) => (
-                                      <MatchBox key={matchIndex} match={match} />
+                                    <MatchBox key={matchIndex} match={match} />
                                     ))}
-                                  </div>
+                                </div>
                                 ))}
-                              </div>
                             </div>
                           ) : (
                               <div className="flex flex-col items-center justify-center text-center p-8 border rounded-lg bg-muted/50 h-full w-full">
@@ -553,6 +551,5 @@ export default function TournamentsPage() {
       )}
     </div>
   );
-}
 
     
