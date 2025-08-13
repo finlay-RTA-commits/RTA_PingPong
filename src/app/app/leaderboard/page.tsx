@@ -114,7 +114,15 @@ export default function LeaderboardPage() {
                 {eloSortedPlayers.map((player) => (
                     <TableRow key={player.id}>
                        <TableCell className="w-[80px] text-center text-lg font-bold">
-                         {(player as any).eloRank}
+                         {player.eloRank === 1 ? (
+                          <span className="inline-block -rotate-[35deg]">👑</span>
+                        ) : player.eloRank === 2 ? (
+                          <span>🥈</span>
+                        ) : player.eloRank === 3 ? (
+                          <span>🥉</span>
+                        ) : (
+                          player.eloRank
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
