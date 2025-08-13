@@ -65,8 +65,8 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
         </DialogHeader>
         
         <div className="py-4 flex-1 min-h-0">
-            <Carousel className="w-full h-full">
-                <CarouselContent>
+            <Carousel className="w-full h-full relative">
+                <CarouselContent className="h-full">
                     <CarouselItem className="flex flex-col justify-center items-center h-full">
                     <div className="p-4 text-center space-y-4">
                         <h3 className="font-semibold text-lg">App Navigation</h3>
