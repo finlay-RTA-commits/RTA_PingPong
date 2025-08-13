@@ -2,15 +2,18 @@
 'use client';
 
 import { useState } from 'react';
-import type { PredictMatchInput, PredictMatchOutput } from '@/lib/types';
+import type { PredictMatchInput, PredictMatchOutput, Achievement } from '@/lib/types';
 import { PlayerCard } from '@/components/player-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, BrainCircuit } from 'lucide-react';
+import { Loader2, BrainCircuit, HelpCircle, Trophy } from 'lucide-react';
 import { predictMatch } from '@/ai/flows/predict-match-flow';
 import { useToast } from '@/hooks/use-toast';
 import { usePlayers } from '@/hooks/use-players';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { achievementData } from '@/lib/types';
+import { achievementIcons } from '@/components/player-card';
 
 export default function PlayerCardsPage() {
   const { players } = usePlayers();
@@ -19,6 +22,7 @@ export default function PlayerCardsPage() {
   const [prediction, setPrediction] = useState<PredictMatchOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const allAchievements = Object.values(achievementData);
 
   const handlePrediction = async () => {
     if (!player1 || !player2) {
@@ -59,11 +63,41 @@ export default function PlayerCardsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Player Cards</h1>
-        <p className="text-muted-foreground">
-          Detailed statistics and information for each player.
-        </p>
+      <div className="flex justify-between items-start">
+        <div>
+            <h1 className="text-3xl font-bold">Player Cards</h1>
+            <p className="text-muted-foreground">
+            Detailed statistics and information for each player.
+            </p>
+        </div>
+        
+        <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="outline">
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    Achievements <Trophy className="ml-2 h-4 w-4 text-amber-400" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+                <div className="space-y-4">
+                    <h4 className="font-medium leading-none">Unlockable Achievements</h4>
+                    <div className="space-y-2">
+                        {allAchievements.map((ach) => {
+                            const Icon = achievementIcons[ach.id];
+                            return (
+                            <div key={ach.id} className="flex items-start gap-3">
+                                <Icon className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                                <div>
+                                    <p className="font-semibold">{ach.name}</p>
+                                    <p className="text-sm text-muted-foreground">{ach.description}</p>
+                                </div>
+                            </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
       </div>
 
       <Card>

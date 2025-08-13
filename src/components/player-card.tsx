@@ -13,7 +13,7 @@ interface PlayerCardProps {
   player: Player;
 }
 
-const achievementIcons: Record<AchievementId, React.ElementType> = {
+export const achievementIcons: Record<AchievementId, React.ElementType> = {
   KING_SLAYER: Crown,
   HOT_STREAK: Flame,
   WELCOME_TO_THE_BIG_LEAGUES: Ticket,
