@@ -244,6 +244,9 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
       if(tournamentId) {
           newAchievements = checkAndGrantAchievement(player, 'WELCOME_TO_THE_BIG_LEAGUES');
       }
+      if(player.wins === 0 && player.losses === 0) {
+          newAchievements = checkAndGrantAchievement(player, 'WELCOME_TO_THE_PARTY_PAL');
+      }
 
 
       // Update batch

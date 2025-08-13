@@ -50,6 +50,7 @@ export const achievementData = {
   KING_SLAYER: { id: 'KING_SLAYER', name: 'King Slayer', description: 'Defeat the #1 ranked player.', icon: 'Crown' },
   HOT_STREAK: { id: 'HOT_STREAK', name: 'Hot Streak', description: 'Win 5 games in a row.', icon: 'Flame' },
   WELCOME_TO_THE_BIG_LEAGUES: { id: 'WELCOME_TO_THE_BIG_LEAGUES', name: 'Welcome to the Big Leagues', description: 'Play your first tournament match.', icon: 'Ticket' },
+  WELCOME_TO_THE_PARTY_PAL: { id: 'WELCOME_TO_THE_PARTY_PAL', name: 'Welcome to the Party, Pal!', description: 'Play your first game.', icon: 'PartyPopper' },
   BUTTERFINGERS: { id: 'BUTTERFINGERS', name: 'Butterfingers', description: 'Lose 5 games in a row.', icon: 'Droplet' },
 } as const;
 

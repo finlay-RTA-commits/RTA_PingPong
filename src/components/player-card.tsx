@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { Player } from '@/lib/types';
-import { Flame, Mail, Star, Swords, Trophy, BarChart, Crown, Ticket, Droplet } from 'lucide-react';
+import { Flame, Mail, Star, Swords, Trophy, BarChart, Crown, Ticket, Droplet, PartyPopper } from 'lucide-react';
 import { Button } from './ui/button';
 import { achievementData, Achievement, AchievementId } from '@/lib/types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -17,6 +17,7 @@ const achievementIcons: Record<AchievementId, React.ElementType> = {
   KING_SLAYER: Crown,
   HOT_STREAK: Flame,
   WELCOME_TO_THE_BIG_LEAGUES: Ticket,
+  WELCOME_TO_THE_PARTY_PAL: PartyPopper,
   BUTTERFINGERS: Droplet,
 };
 
@@ -33,6 +34,7 @@ const AchievementBadge = ({ achievement }: { achievement: Achievement }) => {
                     achievement.id === 'KING_SLAYER' && 'bg-amber-100 border-amber-400 text-amber-500',
                     achievement.id === 'HOT_STREAK' && 'bg-orange-100 border-orange-400 text-orange-500',
                     achievement.id === 'WELCOME_TO_THE_BIG_LEAGUES' && 'bg-blue-100 border-blue-400 text-blue-500',
+                    achievement.id === 'WELCOME_TO_THE_PARTY_PAL' && 'bg-teal-100 border-teal-400 text-teal-500',
                     achievement.id === 'BUTTERFINGERS' && 'bg-gray-100 border-gray-400 text-gray-500',
                 )}>
                     <Icon className="h-5 w-5" />
