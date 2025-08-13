@@ -4,14 +4,15 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  "projectId": "rta-pingpong",
-  "appId": "1:984710269214:web:3bd69f7e3c1d1d7d5fa10f",
-  "storageBucket": "rta-pingpong.firebasestorage.app",
-  "apiKey": "AIzaSyAL2qjoDm6_im98TGbUor7CZfXwcZ_19l4",
-  "authDomain": "rta-pingpong.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "984710269214"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
+
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
