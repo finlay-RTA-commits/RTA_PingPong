@@ -12,6 +12,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -30,25 +38,27 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState('');
   const [avatar, setAvatar] = useState('https://placehold.co/80x80.png');
   const [isSaving, setIsSaving] = useState(false);
+  const [isNewPlayerDialogOpen, setIsNewPlayerDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user && !playersLoading) {
-      // Find the player associated with the logged-in user's UID.
       const player = players.find(p => p.uid === user.uid);
       if (player) {
         setCurrentUserStats(player);
         setDisplayName(player.name);
         setAvatar(player.avatar);
+        setIsNewPlayerDialogOpen(false);
       } else {
-        // If no player found, set defaults from auth profile
-        setDisplayName(user.displayName || 'New Player');
+        // New user, open the creation dialog
+        setDisplayName(user.displayName || '');
         setAvatar(user.photoURL || 'https://placehold.co/80x80.png');
         setCurrentUserStats(null);
+        setIsNewPlayerDialogOpen(true);
       }
     }
   }, [user, players, playersLoading]);
 
-  const handleSaveChanges = async () => {
+  const handleSave = async () => {
     if(!user) return;
     setIsSaving(true);
     
@@ -62,11 +72,16 @@ export default function ProfilePage() {
           });
         } else {
            // Add new player, linking with Firebase Auth UID
+          if (!displayName) {
+             toast({ variant: 'destructive', title: 'Error', description: 'Please enter a name.' });
+             return;
+          }
           await addPlayer(displayName, avatar, user.email || '', user.uid);
           toast({
             title: "Profile Created",
-            description: "You are now on the player roster!",
+            description: "Welcome! You are now on the player roster.",
           });
+          setIsNewPlayerDialogOpen(false); // Close dialog on success
         }
     } catch (error) {
         console.error("Error saving profile:", error);
@@ -142,6 +157,40 @@ export default function ProfilePage() {
   }
 
   return (
+    <>
+    <Dialog open={isNewPlayerDialogOpen} onOpenChange={setIsNewPlayerDialogOpen}>
+      <DialogContent onInteractOutside={(e) => e.preventDefault()} className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Welcome to RTA PingPong!</DialogTitle>
+          <DialogDescription>
+            Create your player profile to join the leaderboard and start competing.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+            <div className="flex items-center justify-center gap-4">
+              <Avatar className="h-24 w-24">
+                <AvatarImage src={avatar} alt={displayName} data-ai-hint="person portrait" />
+                <AvatarFallback className="text-4xl">{displayName?.[0]}</AvatarFallback>
+              </Avatar>
+               <Input id="picture-dialog" type="file" accept="image/png, image/jpeg" onChange={handleAvatarChange} className="hidden" />
+               <Button asChild variant="outline">
+                 <Label htmlFor="picture-dialog">Change Avatar</Label>
+               </Button>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="name-dialog">Display Name</Label>
+              <Input id="name-dialog" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Enter your player name" required />
+            </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Create Profile'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div className="space-y-6 lg:col-span-2">
         <Card>
@@ -166,7 +215,7 @@ export default function ProfilePage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button onClick={handleSaveChanges} disabled={isSaving}>
+            <Button onClick={handleSave} disabled={isSaving}>
               {isSaving ? 'Saving...' : 'Save Changes'}
             </Button>
           </CardFooter>
@@ -185,6 +234,11 @@ export default function ProfilePage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Current Rank</span>
                   <span className="font-bold text-primary text-2xl">#{currentUserStats.rank}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Elo Rating</span>
+                  <span className="font-mono text-primary font-bold">{currentUserStats.stats?.elo ?? 1000}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between">
@@ -207,12 +261,13 @@ export default function ProfilePage() {
             ) : (
                 <div className="text-center text-muted-foreground py-8">
                     <p>You are not on the player roster yet.</p>
-                    <p>Save your profile to be added!</p>
+                    <p>Complete your profile to be added!</p>
                 </div>
             )}
           </CardContent>
         </Card>
       </div>
     </div>
+    </>
   );
 }

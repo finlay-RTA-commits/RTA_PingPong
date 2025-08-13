@@ -18,7 +18,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
@@ -34,7 +33,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Card,
@@ -48,7 +47,7 @@ import { usePlayers } from '@/hooks/use-players';
 import { useAuth } from '@/hooks/use-auth';
 
 export default function PlayersPage() {
-  const { players, addPlayer, updatePlayer, removePlayer } = usePlayers();
+  const { players, updatePlayer, removePlayer } = usePlayers();
   const { user } = useAuth();
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
@@ -74,9 +73,6 @@ export default function PlayersPage() {
     if (editingPlayer) {
       await updatePlayer({ ...editingPlayer, name, avatar, email });
       toast({ title: 'Player Updated', description: `${name} has been updated.` });
-    } else {
-      await addPlayer(name, avatar, email); // email can be blank
-      toast({ title: 'Player Added', description: `${name} has been added to the roster.` });
     }
 
     setEditingPlayer(null);
@@ -120,18 +116,13 @@ export default function PlayersPage() {
     setPassword('');
   };
 
-  const handleAddNewClick = () => {
-    setEditingPlayer(null);
-    setIsFormDialogOpen(true);
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Manage Players</h1>
           <p className="text-muted-foreground">
-            Add, edit, or remove players from the roster.
+            Edit or remove players from the roster. New players are added via the profile page upon first sign-in.
           </p>
         </div>
         <Dialog open={isFormDialogOpen} onOpenChange={(isOpen) => {
@@ -140,20 +131,12 @@ export default function PlayersPage() {
             setEditingPlayer(null);
           }
         }}>
-          <DialogTrigger asChild>
-            <Button onClick={handleAddNewClick}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add New Player
-            </Button>
-          </DialogTrigger>
           <DialogContent>
             <form onSubmit={handleFormSubmit}>
               <DialogHeader>
-                <DialogTitle>{editingPlayer ? 'Edit Player' : 'Add New Player'}</DialogTitle>
+                <DialogTitle>Edit Player</DialogTitle>
                 <DialogDescription>
-                  {editingPlayer
-                    ? `Update the details for ${editingPlayer.name}.`
-                    : 'Fill in the details for the new player.'}
+                  Update the details for {editingPlayer?.name}.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -174,7 +157,7 @@ export default function PlayersPage() {
                 <DialogClose asChild>
                   <Button type="button" variant="secondary" onClick={() => setEditingPlayer(null)}>Cancel</Button>
                 </DialogClose>
-                <Button type="submit">{editingPlayer ? 'Save Changes' : 'Add Player'}</Button>
+                <Button type="submit">Save Changes</Button>
               </DialogFooter>
             </form>
           </DialogContent>
