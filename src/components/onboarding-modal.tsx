@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/carousel';
 import { Button } from './ui/button';
 import { achievementData, AchievementId } from '@/lib/types';
-import { Rocket, LayoutDashboard, Trophy, Swords, User, Users, Crown, Flame, Ticket, PartyPopper, Droplet } from 'lucide-react';
+import { Rocket, LayoutDashboard, Trophy, Swords, User, Users, Crown, Flame, Ticket, PartyPopper, Droplet, Shield, Coins, Repeat, Coffee } from 'lucide-react';
+import { ScrollArea } from './ui/scroll-area';
 
 interface OnboardingModalProps {
   open: boolean;
@@ -39,6 +40,10 @@ const achievementIcons: Record<AchievementId, React.ElementType> = {
   WELCOME_TO_THE_BIG_LEAGUES: Ticket,
   WELCOME_TO_THE_PARTY_PAL: PartyPopper,
   BUTTERFINGERS: Droplet,
+  RIVAL_REVENGE: Shield,
+  COIN_FLIP_CHAMPION: Coins,
+  YO_YO: Repeat,
+  SHOULD_BE_WORKING: Coffee,
 };
 
 export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
@@ -93,25 +98,27 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
               </div>
             </CarouselItem>
              <CarouselItem>
-              <div className="p-4 text-center space-y-4">
+               <div className="p-4 text-center space-y-4">
                 <h3 className="font-semibold text-lg">Unlock Achievements</h3>
                 <p className="text-muted-foreground">
                   Earn badges on your player card by completing challenges!
                 </p>
-                <div className="space-y-2 pt-4 text-left">
-                  {achievements.map((ach) => {
-                    const Icon = achievementIcons[ach.id];
-                    return (
-                      <div key={ach.id} className="flex items-start gap-3">
-                        <Icon className="h-6 w-6 text-primary mt-1" />
-                        <div>
-                            <p className="font-semibold">{ach.name}</p>
-                            <p className="text-sm text-muted-foreground">{ach.description}</p>
+                <ScrollArea className="h-72 w-full rounded-md border p-4">
+                    <div className="space-y-4 text-left">
+                    {achievements.map((ach) => {
+                        const Icon = achievementIcons[ach.id];
+                        return (
+                        <div key={ach.id} className="flex items-start gap-3">
+                            <Icon className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                            <div>
+                                <p className="font-semibold">{ach.name}</p>
+                                <p className="text-sm text-muted-foreground">{ach.description}</p>
+                            </div>
                         </div>
-                      </div>
-                    )
-                  })}
-                </div>
+                        )
+                    })}
+                    </div>
+                </ScrollArea>
               </div>
             </CarouselItem>
           </CarouselContent>

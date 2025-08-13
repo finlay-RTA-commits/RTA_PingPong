@@ -237,21 +237,64 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
       const rival = allPlayers.find(p => p.id === rivalId)?.name || 'N/A';
 
       // --- Achievement Checks ---
+      // KING_SLAYER
       const opponentEloRank = eloSortedPlayers.find(p => p.id === opponentId)?.eloRank;
       if (wonGame && (opponent.rank === 1 || opponentEloRank === 1)) {
           newAchievements = checkAndGrantAchievement(player, 'KING_SLAYER');
       }
+      // HOT_STREAK
       if (newWinStreak >= 5) {
           newAchievements = checkAndGrantAchievement(player, 'HOT_STREAK');
       }
+      // BUTTERFINGERS
       if (newLossStreak >= 5) {
           newAchievements = checkAndGrantAchievement(player, 'BUTTERFINGERS');
       }
+      // WELCOME_TO_THE_BIG_LEAGUES
       if(tournamentId) {
           newAchievements = checkAndGrantAchievement(player, 'WELCOME_TO_THE_BIG_LEAGUES');
       }
+      // WELCOME_TO_THE_PARTY_PAL
       if(player.wins === 0 && player.losses === 0) {
           newAchievements = checkAndGrantAchievement(player, 'WELCOME_TO_THE_PARTY_PAL');
+      }
+      // RIVAL_REVENGE
+      if (wonGame && opponent.name === player.stats?.rival) {
+        newAchievements = checkAndGrantAchievement(player, 'RIVAL_REVENGE');
+      }
+      // COIN_FLIP_CHAMPION
+      if (wonGame && ownScore === 2 && opponentScore === 1) {
+          const lastTwoGames = playerGames.slice(-3, -1);
+          const all2to1Wins = lastTwoGames.every(g => {
+              const isWinner = (g.player1Id === playerId && g.score1 > g.score2) || (g.player2Id === playerId && g.score2 > g.score1);
+              const scoresAre2to1 = (g.player1Id === playerId && g.score1 === 2 && g.score2 === 1) || (g.player2Id === playerId && g.score2 === 2 && g.score1 === 1);
+              return isWinner && scoresAre2to1;
+          });
+          if (lastTwoGames.length === 2 && all2to1Wins) {
+            newAchievements = checkAndGrantAchievement(player, 'COIN_FLIP_CHAMPION');
+          }
+      }
+      // YO_YO
+      const last6Games = playerGames.slice(-6);
+      if (last6Games.length === 6) {
+          let isYoYo = true;
+          const firstGameWon = (last6Games[0].player1Id === playerId && last6Games[0].score1 > last6Games[0].score2) || (last6Games[0].player2Id === playerId && last6Games[0].score2 > last6Games[0].score1);
+          for (let i = 1; i < last6Games.length; i++) {
+              const currentGameWon = (last6Games[i].player1Id === playerId && last6Games[i].score1 > last6Games[i].score2) || (last6Games[i].player2Id === playerId && last6Games[i].score2 > last6Games[i].score1);
+              const prevGameWon = (last6Games[i-1].player1Id === playerId && last6Games[i-1].score1 > last6Games[i-1].score2) || (last6Games[i-1].player2Id === playerId && last6Games[i-1].score2 > last6Games[i-1].score1);
+              if (currentGameWon === prevGameWon) {
+                  isYoYo = false;
+                  break;
+              }
+          }
+          if (isYoYo) {
+              newAchievements = checkAndGrantAchievement(player, 'YO_YO');
+          }
+      }
+      // SHOULD_BE_WORKING
+      const now = new Date();
+      if (wonGame && now.getUTCHours() < 11) {
+        newAchievements = checkAndGrantAchievement(player, 'SHOULD_BE_WORKING');
       }
 
 
