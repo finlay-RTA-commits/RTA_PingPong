@@ -65,70 +65,72 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
         </DialogHeader>
         
         <div className="py-4 flex-1 min-h-0">
-            <Carousel className="w-full h-full relative">
-                <CarouselContent className="h-full">
-                    <CarouselItem className="flex flex-col justify-center items-center h-full">
-                    <div className="p-4 text-center space-y-4">
-                        <h3 className="font-semibold text-lg">App Navigation</h3>
-                        <p className="text-muted-foreground">
-                        Use the sidebar on the left to navigate through the different sections of the app.
-                        </p>
-                        <div className="grid grid-cols-2 gap-4 pt-4 text-left">
-                        {menuItems.map(item => {
-                            const Icon = item.icon;
-                            return (
-                                <div key={item.label} className="flex items-center gap-2 rounded-md border p-3">
-                                    <Icon className="h-5 w-5 text-primary"/>
-                                    <span>{item.label}</span>
-                                </div>
-                            )
+          <Carousel className="w-full h-full">
+            <CarouselContent className="h-full">
+              <CarouselItem className="h-full flex flex-col justify-center items-center">
+                <div className="p-4 text-center space-y-4">
+                  <h3 className="font-semibold text-lg">App Navigation</h3>
+                  <p className="text-muted-foreground">
+                    Use the sidebar on the left to navigate through the different sections of the app.
+                  </p>
+                  <div className="grid grid-cols-2 gap-4 pt-4 text-left">
+                    {menuItems.map(item => {
+                      const Icon = item.icon;
+                      return (
+                        <div key={item.label} className="flex items-center gap-2 rounded-md border p-3">
+                          <Icon className="h-5 w-5 text-primary"/>
+                          <span>{item.label}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </CarouselItem>
+
+              <CarouselItem className="h-full flex flex-col justify-center items-center">
+                <div className="p-4 text-center space-y-4">
+                  <h3 className="font-semibold text-lg">Create Your Player Profile</h3>
+                  <p className="text-muted-foreground">
+                    To start logging games and climbing the leaderboard, you need to create your player profile.
+                  </p>
+                  <div className="mt-4 rounded-lg border-2 border-primary bg-primary/10 p-4">
+                    <p className="font-semibold">
+                      Click on <span className="text-primary inline-flex items-center gap-1"><User className="h-4 w-4" /> My Profile</span> in the bottom-left corner of the sidebar to add yourself to the player roster.
+                    </p>
+                  </div>
+                </div>
+              </CarouselItem>
+
+              <CarouselItem className="h-full flex flex-col justify-center items-center">
+                <div className="w-full h-full p-4 text-center space-y-4 flex flex-col">
+                  <h3 className="font-semibold text-lg">Unlock Achievements</h3>
+                  <p className="text-muted-foreground">
+                    Earn badges on your player card by completing challenges!
+                  </p>
+                  <div className="flex-1 min-h-0 pt-4">
+                    <ScrollArea className="h-full w-full rounded-md border p-4">
+                      <div className="space-y-4 text-left">
+                        {achievements.map((ach) => {
+                          const Icon = achievementIcons[ach.id];
+                          return (
+                            <div key={ach.id} className="flex items-start gap-3">
+                              <Icon className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                              <div>
+                                <p className="font-semibold">{ach.name}</p>
+                                <p className="text-sm text-muted-foreground">{ach.description}</p>
+                              </div>
+                            </div>
+                          )
                         })}
-                        </div>
-                    </div>
-                    </CarouselItem>
-                    <CarouselItem className="flex flex-col justify-center items-center h-full">
-                    <div className="p-4 text-center space-y-4">
-                        <h3 className="font-semibold text-lg">Create Your Player Profile</h3>
-                        <p className="text-muted-foreground">
-                        To start logging games and climbing the leaderboard, you need to create your player profile.
-                        </p>
-                        <div className="mt-4 rounded-lg border-2 border-primary bg-primary/10 p-4">
-                        <p className="font-semibold">
-                            Click on <span className="text-primary inline-flex items-center gap-1"><User className="h-4 w-4" /> My Profile</span> in the bottom-left corner of the sidebar to add yourself to the player roster.
-                        </p>
-                        </div>
-                    </div>
-                    </CarouselItem>
-                    <CarouselItem className="flex flex-col h-full">
-                      <div className="p-4 text-center space-y-4 flex flex-col flex-1 min-h-0">
-                          <h3 className="font-semibold text-lg">Unlock Achievements</h3>
-                          <p className="text-muted-foreground">
-                          Earn badges on your player card by completing challenges!
-                          </p>
-                          <div className="flex-1 min-h-0 pt-4">
-                              <ScrollArea className="h-full w-full rounded-md border p-4">
-                                  <div className="space-y-4 text-left">
-                                  {achievements.map((ach) => {
-                                      const Icon = achievementIcons[ach.id];
-                                      return (
-                                      <div key={ach.id} className="flex items-start gap-3">
-                                          <Icon className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
-                                          <div>
-                                              <p className="font-semibold">{ach.name}</p>
-                                              <p className="text-sm text-muted-foreground">{ach.description}</p>
-                                          </div>
-                                      </div>
-                                      )
-                                  })}
-                                  </div>
-                              </ScrollArea>
-                          </div>
                       </div>
-                    </CarouselItem>
-                </CarouselContent>
-                <CarouselPrevious className="absolute -left-4 top-1/2 -translate-y-1/2" />
-                <CarouselNext className="absolute -right-4 top-1/2 -translate-y-1/2" />
-            </Carousel>
+                    </ScrollArea>
+                  </div>
+                </div>
+              </CarouselItem>
+            </CarouselContent>
+            <CarouselPrevious className="absolute -left-4 top-1/2 -translate-y-1/2" />
+            <CarouselNext className="absolute -right-4 top-1/2 -translate-y-1/2" />
+          </Carousel>
         </div>
 
         <DialogFooter>
