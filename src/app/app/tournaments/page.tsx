@@ -73,7 +73,7 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
         idealSize *= 2;
     }
 
-    const seededPlayers: BracketPlayer[] = [...participants].sort(() => Math.random() - 0.5);
+    const seededPlayers: BracketPlayer[] = [...participants].sort((a, b) => (a.stats?.elo ?? 1000) - (b.stats?.elo ?? 1000));
     while (seededPlayers.length < idealSize) {
         seededPlayers.push({ name: 'BYE' });
     }
@@ -127,19 +127,22 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
 
         if (nextRound.matches.length === 1) {
             nextRound.title = 'Final';
-        } else if (nextRound.matches.length === 2) {
-            nextRound.title = 'Semi-Finals';
+        } else if (nextRound.matches.length <= 4 && nextRound.matches.length > 1) {
+           nextRound.title = 'Semi-Finals';
+           if(nextRound.matches.length <= 2) {
+                nextRound.title = 'Quarter-Finals';
+           }
         }
         
         rounds.push(nextRound);
         lastRound = nextRound;
     }
     
-    const finalMatch = rounds.find(r => r.title === 'Final')?.matches[0];
-    if (finalMatch && finalMatch.winner) {
+    const finalMatch = rounds.find(r => r.matches.length === 1);
+    if (finalMatch && finalMatch.matches[0] && finalMatch.matches[0].winner) {
         rounds.push({
             title: 'Winner',
-            matches: [{ p1: finalMatch.winner, p2: null, winner: finalMatch.winner }]
+            matches: [{ p1: finalMatch.matches[0].winner, p2: null, winner: finalMatch.matches[0].winner }]
         });
     }
 
@@ -147,10 +150,16 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
 };
 
 
-const PlayerBox = ({ player }: { player: BracketPlayer }) => {
+const PlayerBox = ({ player, isWinner }: { player: BracketPlayer, isWinner: boolean }) => {
     const name = player?.name ?? 'TBD';
+    const isBye = name === 'BYE';
+    
     return (
-        <div className="bg-card text-card-foreground px-4 py-2 w-48 text-sm">
+        <div className={cn(
+            "bg-card text-card-foreground px-4 py-2 w-48 text-sm",
+            isWinner && 'font-bold text-primary',
+            isBye && 'text-muted-foreground italic'
+        )}>
             {name}
         </div>
     );
@@ -158,25 +167,10 @@ const PlayerBox = ({ player }: { player: BracketPlayer }) => {
 
 const MatchComponent = ({ match }: { match: Match }) => {
     return (
-        <div className="flex flex-col border border-border rounded-lg overflow-hidden">
-            <PlayerBox player={match.p1} />
+        <div className="flex flex-col border border-border rounded-lg overflow-hidden my-2">
+            <PlayerBox player={match.p1} isWinner={match.winner?.name === match.p1?.name} />
             <div className="border-t border-border w-full" />
-            <PlayerBox player={match.p2} />
-        </div>
-    );
-};
-
-const RoundComponent = ({ round }: { round: BracketRound}) => {
-    return (
-        <div className="flex flex-col items-center flex-shrink-0">
-            <h3 className="font-bold text-lg mb-8 w-48 text-center">{round.title}</h3>
-            <div className="flex flex-col justify-around flex-1 w-full gap-y-10">
-                {round.matches.map((match, index) => (
-                    <div key={index}>
-                        <MatchComponent match={match} />
-                    </div>
-                ))}
-            </div>
+            <PlayerBox player={match.p2} isWinner={match.winner?.name === match.p2?.name} />
         </div>
     );
 };
@@ -515,33 +509,36 @@ export default function TournamentsPage() {
                                 </div>
                             </ScrollArea>
                         </div>
-                           {bracketRounds.length > 0 ? (
-                            <div className="flex justify-center w-full">
+                        {bracketRounds.length > 0 ? (
+                            <div className="flex justify-center w-full h-full">
                                 <ScrollArea className="h-full w-full">
-                                    <div className="flex items-start justify-center p-4 space-x-16">
+                                    <div className="flex justify-center items-start p-4 space-x-8">
                                         {bracketRounds.map((round, roundIndex) => (
-                                            <div key={roundIndex}>
+                                            <div key={roundIndex} className="flex flex-col justify-around h-full">
+                                                <h3 className="font-bold text-lg mb-4 w-48 text-center">{round.title}</h3>
                                                 {round.title === 'Winner' && round.matches[0].winner ? (
-                                                     <div className="flex flex-col items-center gap-2 mt-20">
+                                                    <div className="flex flex-col items-center gap-2">
                                                         <Trophy className="w-10 h-10 text-amber-400"/>
-                                                        <div className="border border-border rounded-lg overflow-hidden">
-                                                        <PlayerBox player={round.matches[0].winner} />
+                                                        <div className="border border-amber-400 rounded-lg overflow-hidden bg-amber-400/10">
+                                                            <PlayerBox player={round.matches[0].winner} isWinner={true} />
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <RoundComponent round={round} />
+                                                    round.matches.map((match, index) => (
+                                                        <MatchComponent key={index} match={match} />
+                                                    ))
                                                 )}
                                             </div>
                                         ))}
                                     </div>
                                 </ScrollArea>
                             </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center text-center p-8 border rounded-lg bg-muted/50 h-full">
-                                    <GitMerge className="h-12 w-12 text-muted-foreground" />
-                                    <p className="mt-4 text-muted-foreground">Add at least 2 players to generate a bracket.</p>
-                                </div>
-                            )}
+                        ) : (
+                            <div className="flex flex-col items-center justify-center text-center p-8 border rounded-lg bg-muted/50 h-full">
+                                <GitMerge className="h-12 w-12 text-muted-foreground" />
+                                <p className="mt-4 text-muted-foreground">Add at least 2 players to generate a bracket.</p>
+                            </div>
+                        )}
                         </div>
                     </DialogContent>
                 </Dialog>
