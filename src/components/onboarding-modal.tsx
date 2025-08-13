@@ -125,13 +125,13 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                 </div>
                 </CarouselItem>
             </CarouselContent>
-            <CarouselPrevious className="-left-4" />
-            <CarouselNext className="-right-4" />
+            <CarouselPrevious className="absolute top-1/2 -translate-y-1/2 -left-4" />
+            <CarouselNext className="absolute top-1/2 -translate-y-1/2 -right-4" />
             </Carousel>
         </div>
 
         <DialogFooter>
-          <Button onClick={() => onOpenChange(false)}>Got it, let's play!</Button>
+          <Button onClick={() => onOpenChange(false)} className="w-full">Got it, let's play!</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
