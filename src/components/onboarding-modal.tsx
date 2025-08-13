@@ -63,10 +63,10 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
             Here’s a quick tour to get you started.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 py-4">
             <Carousel className="w-full h-full">
             <CarouselContent className="h-full">
-                <CarouselItem className="flex flex-col justify-center">
+                <CarouselItem className="flex flex-col justify-center items-center">
                 <div className="p-4 text-center space-y-4">
                     <h3 className="font-semibold text-lg">App Navigation</h3>
                     <p className="text-muted-foreground">
@@ -85,7 +85,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                     </div>
                 </div>
                 </CarouselItem>
-                <CarouselItem className="flex flex-col justify-center">
+                <CarouselItem className="flex flex-col justify-center items-center">
                 <div className="p-4 text-center space-y-4">
                     <h3 className="font-semibold text-lg">Create Your Player Profile</h3>
                     <p className="text-muted-foreground">
@@ -98,13 +98,13 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                     </div>
                 </div>
                 </CarouselItem>
-                <CarouselItem className="flex flex-col">
+                <CarouselItem className="flex flex-col h-full">
                 <div className="p-4 text-center space-y-4 flex flex-col flex-1 min-h-0">
                     <h3 className="font-semibold text-lg">Unlock Achievements</h3>
                     <p className="text-muted-foreground">
                     Earn badges on your player card by completing challenges!
                     </p>
-                    <div className="flex-1 min-h-0">
+                    <div className="flex-1 min-h-0 pt-4">
                         <ScrollArea className="h-full w-full rounded-md border p-4">
                             <div className="space-y-4 text-left">
                             {achievements.map((ach) => {
@@ -125,8 +125,8 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                 </div>
                 </CarouselItem>
             </CarouselContent>
-            <CarouselPrevious className="absolute top-1/2 -translate-y-1/2 -left-4" />
-            <CarouselNext className="absolute top-1/2 -translate-y-1/2 -right-4" />
+            <CarouselPrevious className="left-2" />
+            <CarouselNext className="right-2" />
             </Carousel>
         </div>
 
