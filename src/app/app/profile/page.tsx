@@ -49,18 +49,19 @@ export default function ProfilePage() {
         setCurrentUserStats(player);
         setDisplayName(player.name);
         setAvatar(player.avatar);
-        setIsNewPlayerDialogOpen(false);
+        setIsNewPlayerDialogOpen(false); // Make sure dialog is closed for existing players
       } else {
-        // New user, potentially show onboarding then creation dialog
+        // This is a new user
+        setDisplayName(user.displayName || '');
+        setAvatar(user.photoURL || 'https://placehold.co/80x80.png');
+        setCurrentUserStats(null);
+        
         const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
         if (!hasSeenOnboarding) {
             setShowOnboarding(true);
         } else {
             setIsNewPlayerDialogOpen(true);
         }
-        setDisplayName(user.displayName || '');
-        setAvatar(user.photoURL || 'https://placehold.co/80x80.png');
-        setCurrentUserStats(null);
       }
     }
   }, [user, players, playersLoading]);
@@ -189,7 +190,6 @@ export default function ProfilePage() {
         if (!open) {
             handleOnboardingFinish();
         }
-        setShowOnboarding(open);
     }} />
 
     <Dialog open={isNewPlayerDialogOpen} onOpenChange={setIsNewPlayerDialogOpen}>
