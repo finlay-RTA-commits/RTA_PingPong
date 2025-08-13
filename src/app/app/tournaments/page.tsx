@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import Image from "next/image";
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, getDocs, where } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Button } from "@/components/ui/button";
 import {
@@ -51,10 +52,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
+type BracketPlayer = Player | { name: 'BYE' } | null;
 
 interface Match {
-  p1: Player | { name: 'BYE' } | null;
-  p2: Player | { name: 'BYE' } | null;
+  p1: BracketPlayer;
+  p2: BracketPlayer;
   winner: Player | null;
 }
 interface BracketRound {
@@ -65,53 +67,46 @@ interface BracketRound {
 const generateBracket = (participants: Player[], games: Game[], tournamentId: string): BracketRound[] => {
     if (participants.length < 2) return [];
 
-    // 1. Pad participants to the nearest power of 2 for a standard bracket
-    const idealSize = Math.pow(2, Math.ceil(Math.log2(participants.length)));
-    const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5); // Randomize seeds
-    const byes = Array(idealSize - participants.length).fill({ name: 'BYE' });
-    const round1Players = [...shuffledParticipants, ...byes];
-
-    const bracket: BracketRound[] = [];
-    let currentRoundPlayers: (Player | { name: 'BYE' } | null)[] = round1Players;
-    let roundNumber = 1;
-
-    // Function to find the winner of a specific match from game logs
-    const findWinner = (p1: Player | { name: 'BYE' } | null, p2: Player | { name: 'BYE' } | null): Player | null => {
-        if (!p1 || !p2 || 'name' in p1 || 'name' in p2) return null; // No real match
+    const findWinner = (p1: BracketPlayer, p2: BracketPlayer): Player | null => {
+        if (!p1 || !p2 || 'name' in p1 || 'name' in p2) return null;
         const game = games.find(g =>
             g.tournamentId === tournamentId &&
             ((g.player1Id === p1.id && g.player2Id === p2.id) || (g.player1Id === p2.id && g.player2Id === p1.id))
         );
-        if (!game) return null; // Game not played yet
-
-        return game.score1 > game.score2 ? (p1 as Player) : (p2 as Player);
+        if (!game) return null;
+        return game.score1 > game.score2 ? p1 : p2;
     };
 
-    while (currentRoundPlayers.length >= 1) {
-        const round: BracketRound = {
-            title: roundNumber === 1 ? `Round 1` : (currentRoundPlayers.length > 2 ? `Round ${roundNumber}`: (currentRoundPlayers.length === 2 ? 'Final' : 'Winner')),
-            matches: []
-        };
-        
-        if (currentRoundPlayers.length === 1 && roundNumber > 1) {
-             round.matches.push({p1: currentRoundPlayers[0], p2: null, winner: currentRoundPlayers[0] as Player});
-             bracket.push(round);
-             break;
-        }
+    const idealSize = Math.pow(2, Math.ceil(Math.log2(participants.length)));
+    const shuffledParticipants: BracketPlayer[] = [...participants].sort(() => Math.random() - 0.5);
+    while (shuffledParticipants.length < idealSize) {
+        shuffledParticipants.push({ name: 'BYE' });
+    }
 
-        const nextRoundPlayers: (Player | { name: 'BYE' } | null)[] = [];
+    const bracket: BracketRound[] = [];
+    let currentRoundPlayers = shuffledParticipants;
+    let roundNumber = 1;
 
-        // Pair players for matches in the current round
+    while (currentRoundPlayers.length > 1) {
+        const roundTitle =
+            currentRoundPlayers.length === 2 ? "Final" :
+            currentRoundPlayers.length === 4 ? "Semi-Finals" :
+            currentRoundPlayers.length === 8 ? "Quarter-Finals" :
+            `Round ${roundNumber}`;
+
+        const round: BracketRound = { title: roundTitle, matches: [] };
+        const nextRoundPlayers: BracketPlayer[] = [];
+
         for (let i = 0; i < currentRoundPlayers.length; i += 2) {
             const p1 = currentRoundPlayers[i];
             const p2 = currentRoundPlayers[i + 1];
 
-            if ('name' in (p1 || {})) { // p1 is a BYE
+            if (p1?.name === 'BYE') {
                 nextRoundPlayers.push(p2);
                 round.matches.push({ p1, p2, winner: p2 as Player });
                 continue;
             }
-             if ('name' in (p2 || {})) { // p2 is a BYE
+             if (p2?.name === 'BYE') {
                 nextRoundPlayers.push(p1);
                 round.matches.push({ p1, p2, winner: p1 as Player });
                 continue;
@@ -119,22 +114,23 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
 
             const winner = findWinner(p1, p2);
             round.matches.push({ p1, p2, winner });
-            nextRoundPlayers.push(winner); // Winner advances (or null if not played)
+            nextRoundPlayers.push(winner);
         }
-        
+
         bracket.push(round);
-        
-        if (nextRoundPlayers.length === 1 && roundNumber > 1) {
-             bracket.push({title: 'Winner', matches: [{p1: nextRoundPlayers[0], p2: null, winner: nextRoundPlayers[0] as Player}]});
-             break;
-        }
-        
         currentRoundPlayers = nextRoundPlayers;
         roundNumber++;
-
-        if (bracket.length > 10) break; // Safety break
+        if (roundNumber > 10) break; // Safety break
     }
-    
+
+    // Add final winner round
+    if (currentRoundPlayers.length === 1 && currentRoundPlayers[0]) {
+        bracket.push({
+            title: 'Winner',
+            matches: [{ p1: currentRoundPlayers[0], p2: null, winner: currentRoundPlayers[0] as Player }]
+        });
+    }
+
     return bracket;
 };
 
@@ -480,32 +476,37 @@ export default function TournamentsPage() {
                         </div>
                             {bracket.length > 0 ? (
                                 <ScrollArea className="h-full">
-                                    <div className="relative flex p-4" style={{'--round-gap': '8rem', '--match-gap': '6rem'} as React.CSSProperties}>
+                                    <div className="relative flex p-4" style={{'--round-gap': '5rem', '--match-gap': '4rem'} as React.CSSProperties}>
                                     {bracket.map((round, roundIndex) => (
                                         <div key={roundIndex} className="flex flex-col justify-around" style={{ marginRight: 'var(--round-gap)' }}>
-                                            <h3 className="font-bold text-center mb-4">{round.title}</h3>
-                                            <div className="flex flex-col " style={{ gap: 'var(--match-gap)' }}>
+                                            <h3 className="font-bold text-center mb-4 text-lg">{round.title}</h3>
+                                            <div className="flex flex-col" style={{ gap: `calc(var(--match-gap) + ${roundIndex > 0 ? (Math.pow(2, roundIndex) -1) * 2.75 : 0}rem)` }}>
                                                 {round.matches.map((match, matchIndex) => {
-                                                    const dq = !match.winner && isDisqualified(selectedTournament!.date);
-                                                    const isFinalRound = roundIndex === bracket.length - 2;
-                                                    const isWinnerRound = roundIndex === bracket.length - 1;
-                                                    
+                                                     const isWinnerRound = roundIndex === bracket.length - 1;
+
                                                     return (
-                                                        <div key={matchIndex} className="relative flex flex-col justify-center" style={{height: '5.5rem'}}>
-                                                            <div className="flex flex-col space-y-2">
-                                                                <div className={cn("border p-2 rounded-md bg-muted/50 w-48 text-sm", dq && "line-through opacity-50", match.winner && match.p1 && match.winner.id === match.p1.id && 'font-bold border-primary', match.p1?.name === 'BYE' && 'opacity-0' )}>{match.p1?.name ?? 'TBD'}</div>
-                                                                { match.p2 && <div className={cn("border p-2 rounded-md bg-muted/50 w-48 text-sm", dq && "line-through opacity-50", match.winner && match.p2 && match.winner.id === match.p2.id && 'font-bold border-primary', match.p2?.name === 'BYE' && 'opacity-0')}>{match.p2?.name ?? 'TBD'}</div>}
+                                                        <div key={matchIndex} className="relative flex flex-col justify-center">
+                                                            <div className="flex flex-col space-y-2 z-10">
+                                                                <div className={cn("border p-2 rounded-md bg-muted/50 w-48 text-sm", match.winner && match.p1 && match.winner.id === match.p1.id && 'font-bold border-primary', match.p1?.name === 'BYE' && 'opacity-0' )}>{match.p1?.name ?? 'TBD'}</div>
+                                                                {!isWinnerRound && <div className={cn("border p-2 rounded-md bg-muted/50 w-48 text-sm", match.winner && match.p2 && match.winner.id === match.p2.id && 'font-bold border-primary', match.p2?.name === 'BYE' && 'opacity-0')}>{match.p2?.name ?? 'TBD'}</div>}
                                                             </div>
+                                                          
+                                                            {/* Connectors */}
                                                             {!isWinnerRound && (
-                                                               <>
-                                                                {/* Horizontal line to the right of the match */}
-                                                                <div className="absolute top-1/2 -right-[calc(var(--round-gap)/2)] h-px w-[calc(var(--round-gap)/2)] bg-border -translate-y-1/2"></div>
-                                                                {/* Vertical line connecting pairs */}
-                                                                {matchIndex % 2 === 0 && !isFinalRound && (
-                                                                     <div className="absolute -right-[calc(var(--round-gap)/2)] h-[calc(100%_+_var(--match-gap))] w-px bg-border top-1/2"></div>
-                                                                )}
-                                                               </>
+                                                                <>
+                                                                    {/* Line from match to the horizontal connector */}
+                                                                    <div className="absolute left-full top-1/2 -translate-y-1/2 h-px w-[calc(var(--round-gap)/2)] bg-border"></div>
+
+                                                                    {/* Vertical line connecting to the next match's horizontal line */}
+                                                                    {matchIndex % 2 === 0 && (
+                                                                        <div
+                                                                            className="absolute left-[calc(100%_+_calc(var(--round-gap)/2))] top-1/2 w-px bg-border"
+                                                                            style={{ height: `calc(100% + var(--match-gap) + ${roundIndex > 0 ? (Math.pow(2, roundIndex) -1) * 2.75 : 0}rem)` }}
+                                                                        ></div>
+                                                                    )}
+                                                                </>
                                                             )}
+
                                                         </div>
                                                     )
                                                 })}
