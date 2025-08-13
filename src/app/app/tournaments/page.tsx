@@ -74,18 +74,15 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
     }
 
     let seededPlayers: BracketPlayer[] = [...participants];
-     // Simple seeding for now, can be replaced with a real seeding algorithm
     seededPlayers.sort(() => Math.random() - 0.5);
 
     while (seededPlayers.length < idealSize) {
         seededPlayers.push({ name: 'BYE' });
     }
     
-    // Un-seed the players for a standard bracket flow
     const p = seededPlayers;
     const order = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].slice(0, p.length);
     const reorderedPlayers = order.map(i => p[i]);
-
 
     const findWinner = (p1: BracketPlayer, p2: BracketPlayer): BracketPlayer | null => {
         if (!p1 || !p2) return null;
@@ -125,22 +122,36 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
         for(let i = 0; i < currentRoundPlayers.length; i += 2) {
             const p1 = currentRoundPlayers[i];
             const p2 = currentRoundPlayers[i+1];
-            const winner = findWinner(p1, p2);
-            currentRound.matches.push({p1, p2, winner});
-            nextRoundPlayers.push(winner);
+            currentRound.matches.push({p1, p2, winner: null});
+        }
+        
+        const winners = [];
+        for (const match of currentRound.matches) {
+            winners.push(findWinner(match.p1, match.p2));
+        }
+        
+        rounds.push(currentRound);
+
+        const nextRoundMatches = [];
+        for (let i = 0; i < winners.length; i += 2) {
+            const p1 = winners[i] || { name: 'TBD' };
+            const p2 = (winners[i+1] !== undefined) ? (winners[i+1] || { name: 'TBD' }) : { name: 'BYE' };
+            nextRoundMatches.push(p1, p2);
         }
 
-        rounds.push(currentRound);
-        currentRoundPlayers = nextRoundPlayers.map(p => p || { name: 'TBD' });
+        currentRoundPlayers = nextRoundMatches.filter(p => p.name !== 'BYE');
         roundNum++;
     }
     
-     const finalMatch = rounds[rounds.length-1]?.matches[0];
-     if(finalMatch && finalMatch.winner) {
-         rounds.push({
-             title: 'Winner',
-             matches: [{ p1: finalMatch.winner, p2: null, winner: finalMatch.winner }]
-         });
+     const finalRound = rounds.find(r => r.title === 'Final');
+     if (finalRound && finalRound.matches.length === 1) {
+         const winner = findWinner(finalRound.matches[0].p1, finalRound.matches[0].p2);
+         if(winner) {
+            rounds.push({
+                title: 'Winner',
+                matches: [{ p1: winner, p2: null, winner: winner }]
+            });
+         }
      }
 
     return rounds;
@@ -160,16 +171,23 @@ const PlayerBox = ({ player }: { player: BracketPlayer }) => {
     );
 };
 
-const MatchComponent = ({ match }: { match: Match }) => {
+const MatchComponent = ({ match, isFinal }: { match: Match, isFinal: boolean }) => {
+    if (!match.p1 && !match.p2) return null;
+    if (match.p1?.name === 'BYE' && match.p2?.name === 'BYE') return null;
+
     return (
         <div className="relative flex flex-col justify-center items-start">
             <div className="flex flex-col border border-border rounded-lg overflow-hidden">
                 <PlayerBox player={match.p1} />
-                <div className="border-t border-border w-full" />
-                <PlayerBox player={match.p2} />
+                {(match.p1?.name !== 'BYE' && match.p2?.name !== 'BYE') && <div className="border-t border-border w-full" />}
+                 <PlayerBox player={match.p2} />
             </div>
-            {/* Connector line */}
-            <div className="absolute left-full top-1/2 w-8 h-px bg-border -translate-y-px" />
+            {!isFinal && (
+                <>
+                    <div className="absolute left-full top-1/2 w-8 h-px bg-border -translate-y-px" />
+                    <div className="absolute left-[calc(100%+2rem)] top-0 w-px h-full bg-border" />
+                </>
+            )}
         </div>
     );
 };
@@ -510,11 +528,11 @@ export default function TournamentsPage() {
                         </div>
                            {bracketRounds.length > 0 ? (
                                 <ScrollArea className="h-full">
-                                    <div className="flex items-start p-4 space-x-16">
+                                    <div className="flex items-start justify-center p-4 space-x-16 w-full">
                                         {bracketRounds.map((round, roundIndex) => (
                                             <div key={roundIndex} className="flex flex-col items-center flex-shrink-0">
                                                 <h3 className="font-bold text-lg text-center mb-8 w-48">{round.title}</h3>
-                                                <div className={cn("flex flex-col flex-1 w-full", round.title !== 'Winner' && 'justify-around' )}>
+                                                <div className="flex flex-col flex-1 w-full justify-around space-y-10">
                                                     {round.title === 'Winner' && round.matches[0].winner ? (
                                                         <div className="flex flex-col items-center gap-2">
                                                             <Trophy className="w-10 h-10 text-amber-400"/>
@@ -526,15 +544,7 @@ export default function TournamentsPage() {
                                                       <div className="flex flex-col justify-around flex-1 gap-y-10">
                                                         {round.matches.map((match, matchIndex) => (
                                                           <div key={matchIndex} className="relative">
-                                                            <MatchComponent match={match} />
-                                                            {/* Vertical connector from match to the main line */}
-                                                            {roundIndex < bracketRounds.length -1 && round.title !== 'Winner' && (
-                                                              <div className="absolute top-1/2 left-[calc(100%+2rem)] w-px h-[calc(50%+2.5rem)] bg-border" style={{top: matchIndex % 2 === 0 ? '50%' : 'auto', bottom: matchIndex % 2 !== 0 ? '50%' : 'auto'}} />
-                                                            )}
-                                                            {/* Horizontal connector linking vertical lines from two matches */}
-                                                            {matchIndex % 2 !== 0 && round.title !== 'Winner' && (
-                                                               <div className="absolute left-[calc(100%+2rem)] top-[-2.5rem] w-8 h-px bg-border" />
-                                                            )}
+                                                            <MatchComponent match={match} isFinal={round.title === 'Final'}/>
                                                           </div>
                                                         ))}
                                                       </div>
