@@ -51,8 +51,8 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]">
-        <DialogHeader className="text-center pt-4">
+      <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh] p-0">
+        <DialogHeader className="text-center p-6 pb-4">
           <div className="flex justify-center mb-4">
              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
               <Rocket className="h-8 w-8" />
@@ -64,11 +64,11 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
           </DialogDescription>
         </DialogHeader>
         
-        <div className="py-4 flex-1 min-h-0">
-          <Carousel className="w-full h-full">
+        <div className="flex-1 px-6 min-h-0">
+          <Carousel className="w-full h-full relative">
             <CarouselContent className="h-full">
               <CarouselItem className="h-full flex flex-col justify-center items-center">
-                <div className="p-4 text-center space-y-4">
+                <div className="text-center space-y-4">
                   <h3 className="font-semibold text-lg">App Navigation</h3>
                   <p className="text-muted-foreground">
                     Use the sidebar on the left to navigate through the different sections of the app.
@@ -88,7 +88,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
               </CarouselItem>
 
               <CarouselItem className="h-full flex flex-col justify-center items-center">
-                <div className="p-4 text-center space-y-4">
+                <div className="text-center space-y-4">
                   <h3 className="font-semibold text-lg">Create Your Player Profile</h3>
                   <p className="text-muted-foreground">
                     To start logging games and climbing the leaderboard, you need to create your player profile.
@@ -102,7 +102,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
               </CarouselItem>
 
               <CarouselItem className="h-full flex flex-col justify-center items-center">
-                <div className="w-full h-full p-4 text-center space-y-4 flex flex-col">
+                <div className="w-full text-center space-y-4 flex flex-col h-full">
                   <h3 className="font-semibold text-lg">Unlock Achievements</h3>
                   <p className="text-muted-foreground">
                     Earn badges on your player card by completing challenges!
@@ -128,12 +128,12 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                 </div>
               </CarouselItem>
             </CarouselContent>
-            <CarouselPrevious className="absolute -left-4 top-1/2 -translate-y-1/2" />
-            <CarouselNext className="absolute -right-4 top-1/2 -translate-y-1/2" />
+            <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2" />
+            <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2" />
           </Carousel>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4">
           <Button onClick={() => onOpenChange(false)} className="w-full">Got it, let's play!</Button>
         </DialogFooter>
       </DialogContent>
