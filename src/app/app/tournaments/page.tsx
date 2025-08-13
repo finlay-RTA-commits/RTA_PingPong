@@ -67,12 +67,16 @@ interface BracketRound {
 const generateBracket = (participants: Player[], games: Game[], tournamentId: string): BracketRound[] => {
     if (participants.length < 2) return [];
 
-    const findWinner = (p1Id: string, p2Id: string): Player | null => {
+    const findWinner = (p1: BracketPlayer, p2: BracketPlayer): BracketPlayer | null => {
+        if (!p1 || !p2 || !('id' in p1) || !('id' in p2)) return null;
+        
         const game = games.find(g =>
             g.tournamentId === tournamentId &&
-            ((g.player1Id === p1Id && g.player2Id === p2Id) || (g.player1Id === p2Id && g.player2Id === p1Id))
+            ((g.player1Id === p1.id && g.player2Id === p2.id) || (g.player1Id === p2.id && g.player2Id === p1.id))
         );
+
         if (!game) return null;
+        
         const winnerId = game.score1 > game.score2 ? game.player1Id : game.player2Id;
         return participants.find(p => p.id === winnerId) || null;
     };
@@ -83,14 +87,14 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
         idealSize *= 2;
     }
     const byes = idealSize - participants.length;
-
-    // Seed players (simple shuffle for now) and add BYEs
+    
+    // Seed players and add BYEs
     const seededPlayers: BracketPlayer[] = [...participants].sort(() => Math.random() - 0.5);
     for (let i = 0; i < byes; i++) {
-        // Distribute BYEs strategically if needed, for now just push them
+        // Distribute BYEs by adding them to the end of the list.
         seededPlayers.push({ name: 'BYE' });
     }
-    
+
     // 2. Build Round 1
     const rounds: BracketRound[] = [];
     const round1: BracketRound = { title: 'Round 1', matches: [] };
@@ -99,37 +103,32 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
         const p2 = seededPlayers[i+1];
         let winner: BracketPlayer = null;
 
-        if (p1 && p1.name === 'BYE') winner = p2;
-        else if (p2 && p2.name === 'BYE') winner = p1;
-        else if (p1 && p2 && 'id' in p1 && 'id' in p2) {
-             winner = findWinner(p1.id, p2.id);
-        }
+        if (p1?.name === 'BYE') winner = p2;
+        else if (p2?.name === 'BYE') winner = p1;
+        else winner = findWinner(p1, p2);
         
         round1.matches.push({ p1, p2, winner });
     }
     rounds.push(round1);
 
-    // 3. Build subsequent rounds
-    let previousWinners: BracketPlayer[] = round1.matches.map(m => m.winner);
-    while (previousWinners.length > 1) {
+    // 3. Build subsequent rounds based on the potential structure
+    let previousRound = round1;
+    while (previousRound.matches.length > 1) {
         const currentRoundMatches: Match[] = [];
-        const nextRoundWinners: BracketPlayer[] = [];
+        for (let i = 0; i < previousRound.matches.length; i += 2) {
+            const match1 = previousRound.matches[i];
+            const match2 = previousRound.matches[i + 1];
 
-        for (let i = 0; i < previousWinners.length; i += 2) {
-            const p1 = previousWinners[i];
-            const p2 = previousWinners[i + 1];
+            const p1 = match1.winner;
+            const p2 = match2.winner;
 
-            let winner: BracketPlayer = null;
-            if (p1 && 'id' in p1 && p2 && 'id' in p2) {
-                winner = findWinner(p1.id, p2.id);
-            }
-            
+            const winner = findWinner(p1, p2);
+
             currentRoundMatches.push({
                 p1: p1 || { name: 'TBD' },
                 p2: p2 || { name: 'TBD' },
-                winner
+                winner: winner
             });
-            nextRoundWinners.push(winner);
         }
         
         const roundTitle = 
@@ -140,7 +139,7 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
             
         const currentRound = { title: roundTitle, matches: currentRoundMatches };
         rounds.push(currentRound);
-        previousWinners = nextRoundWinners;
+        previousRound = currentRound;
     }
 
     // 4. Add a final "Winner" round if the final match has a winner
@@ -154,7 +153,6 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
 
     return rounds;
 };
-
 
 export default function TournamentsPage() {
   const { players } = usePlayers();
@@ -501,7 +499,7 @@ export default function TournamentsPage() {
                                     {bracket.map((round, roundIndex) => (
                                         <div key={roundIndex} className="flex flex-col justify-around" style={{ marginRight: 'var(--round-gap)' }}>
                                             <h3 className="font-bold text-center mb-4 text-lg">{round.title}</h3>
-                                            <div className="flex flex-col" style={{ gap: `calc(var(--match-gap) + ${roundIndex > 0 ? (Math.pow(2, roundIndex) -1) * 2.75 : 0}rem)` }}>
+                                            <div className="flex flex-col justify-around flex-1">
                                                 {round.matches.map((match, matchIndex) => {
                                                      const isWinnerRound = roundIndex === bracket.length - 1 && round.matches.length === 1 && match.p2 === null;
                                                      const p1IsWinner = match.winner && match.p1 && 'id' in match.p1 && 'id' in match.winner && match.winner.id === match.p1.id;
@@ -525,7 +523,7 @@ export default function TournamentsPage() {
                                                                     {matchIndex % 2 === 0 && (
                                                                         <div
                                                                             className="absolute left-[calc(100%_+_calc(var(--round-gap)/2))] top-1/2 w-px bg-border"
-                                                                            style={{ height: `calc(100% + var(--match-gap) + ${roundIndex > 0 ? (Math.pow(2, roundIndex) -1) * 2.75 : 0}rem)` }}
+                                                                            style={{ height: `calc(100% + ${Math.pow(2, roundIndex)} * 2.25rem + ${Math.pow(2, roundIndex-1)}rem)` }}
                                                                         ></div>
                                                                     )}
                                                                       {/* Horizontal line connecting the vertical line to the next round's match */}
@@ -534,7 +532,7 @@ export default function TournamentsPage() {
                                                                             className="absolute left-[calc(100%_+_calc(var(--round-gap)/2))] bg-border h-px"
                                                                             style={{
                                                                                 width: `calc(var(--round-gap)/2)`,
-                                                                                top: `calc(50% + (100% + var(--match-gap) + ${roundIndex > 0 ? (Math.pow(2, roundIndex) - 1) * 2.75 : 0}rem) / 2)`
+                                                                                top: `calc(50% + (100% + ${Math.pow(2, roundIndex)} * 2.25rem + ${Math.pow(2, roundIndex-1)}rem) / 2)`
                                                                             }}
                                                                         ></div>
                                                                     )}
@@ -565,3 +563,4 @@ export default function TournamentsPage() {
     </div>
   );
 }
+
