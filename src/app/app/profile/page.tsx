@@ -28,6 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import { usePlayers } from '@/hooks/use-players';
 import type { Player } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { OnboardingModal } from '@/components/onboarding-modal';
 
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
@@ -39,6 +40,7 @@ export default function ProfilePage() {
   const [avatar, setAvatar] = useState('https://placehold.co/80x80.png');
   const [isSaving, setIsSaving] = useState(false);
   const [isNewPlayerDialogOpen, setIsNewPlayerDialogOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (user && !playersLoading) {
@@ -49,11 +51,17 @@ export default function ProfilePage() {
         setAvatar(player.avatar);
         setIsNewPlayerDialogOpen(false);
       } else {
-        // New user, open the creation dialog
+        // New user, potentially show onboarding then creation dialog
+        const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
+        if (!hasSeenOnboarding) {
+            setShowOnboarding(true);
+            localStorage.setItem('hasSeenOnboarding', 'true');
+        } else {
+            setIsNewPlayerDialogOpen(true);
+        }
         setDisplayName(user.displayName || '');
         setAvatar(user.photoURL || 'https://placehold.co/80x80.png');
         setCurrentUserStats(null);
-        setIsNewPlayerDialogOpen(true);
       }
     }
   }, [user, players, playersLoading]);
@@ -122,6 +130,14 @@ export default function ProfilePage() {
       }
     }
   };
+
+  const handleOnboardingFinish = () => {
+    setShowOnboarding(false);
+    // If it was a new user, open the profile creation dialog after onboarding
+    if (!currentUserStats) {
+        setIsNewPlayerDialogOpen(true);
+    }
+  }
   
   const totalGames = currentUserStats ? currentUserStats.wins + currentUserStats.losses : 0;
   const winRate = totalGames > 0 ? ((currentUserStats!.wins / totalGames) * 100).toFixed(1) : "0";
@@ -169,6 +185,13 @@ export default function ProfilePage() {
 
   return (
     <>
+    <OnboardingModal open={showOnboarding} onOpenChange={(open) => {
+        if (!open) {
+            handleOnboardingFinish();
+        }
+        setShowOnboarding(open);
+    }} />
+
     <Dialog open={isNewPlayerDialogOpen} onOpenChange={setIsNewPlayerDialogOpen}>
       <DialogContent onInteractOutside={(e) => e.preventDefault()} className="sm:max-w-[425px]">
         <DialogHeader>
