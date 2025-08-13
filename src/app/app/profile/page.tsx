@@ -45,36 +45,32 @@ function ProfilePageContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    if (searchParams.get('new_user') === 'true') {
-        const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
-        if (!hasSeenOnboarding) {
-            setShowOnboarding(true);
-        }
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
     if (user && !playersLoading) {
       const player = players.find(p => p.uid === user.uid);
       if (player) {
+        // Existing player logic
         setCurrentUserStats(player);
         setDisplayName(player.name);
         setAvatar(player.avatar);
         setIsNewPlayerDialogOpen(false); 
       } else {
-        // This is a new user
+        // This is a new user, check for onboarding
         setDisplayName(user.displayName || '');
         setAvatar(user.photoURL || 'https://placehold.co/80x80.png');
         setCurrentUserStats(null);
-        
+
+        const isNewUserFromSignup = searchParams.get('new_user') === 'true';
         const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
-        if (showOnboarding === false && hasSeenOnboarding) {
+
+        if (isNewUserFromSignup && !hasSeenOnboarding) {
+            setShowOnboarding(true);
+        } else {
+            // Show create profile dialog if not showing onboarding
             setIsNewPlayerDialogOpen(true);
         }
-        
       }
     }
-  }, [user, players, playersLoading, showOnboarding]);
+  }, [user, players, playersLoading, searchParams]);
 
   const handleSave = async () => {
     if(!user) return;

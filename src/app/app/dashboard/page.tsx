@@ -51,7 +51,6 @@ import {
 } from "@/components/ui/tooltip"
 import { collection, onSnapshot, addDoc, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { OnboardingModal } from '@/components/onboarding-modal';
 
 export default function DashboardPage() {
   const { players, updatePlayerStats } = usePlayers();
