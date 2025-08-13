@@ -80,9 +80,10 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
 
     const findWinner = (p1: BracketPlayer, p2: BracketPlayer): BracketPlayer | null => {
         if (!p1 || !p2) return null;
-        if (p1.name === 'BYE') return p2;
-        if (p2.name === 'BYE') return p1;
-        if (p1.name === 'TBD' || p2.name === 'TBD') return null;
+        if ('name' in p1 && p1.name === 'BYE') return p2;
+        if ('name' in p2 && p2.name === 'BYE') return p1;
+        if ('name' in p1 && p1.name === 'TBD') return null;
+        if ('name' in p2 && p2.name === 'TBD') return null;
 
         if ('id' in p1 && 'id' in p2) {
             const game = games.find(g =>
@@ -103,7 +104,7 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
     const round1: BracketRound = { title: `Round 1`, matches: [] };
     for (let i = 0; i < currentPlayers.length; i += 2) {
         const p1 = currentPlayers[i];
-        const p2 = currentPlayers[i + 1];
+        const p2 = currentPlayers[i+1];
         round1.matches.push({ p1, p2, winner: findWinner(p1, p2) });
     }
     rounds.push(round1);
@@ -118,7 +119,7 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
         const winners = lastRound.matches.map(m => m.winner);
         for (let i = 0; i < winners.length; i += 2) {
             const p1 = winners[i] || { name: 'TBD' };
-            const p2 = winners[i + 1] || { name: 'TBD' };
+            const p2 = winners[i+1] || { name: 'TBD' };
             nextRound.matches.push({ p1, p2, winner: findWinner(p1, p2) });
         }
 
@@ -145,15 +146,13 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
     return rounds;
 };
 
-
-const PlayerBox = ({ player, isWinner }: { player: BracketPlayer, isWinner: boolean }) => {
+const PlayerBox = ({ player }: { player: BracketPlayer }) => {
     const name = player?.name ?? 'TBD';
     const isBye = name === 'BYE';
     
     return (
         <div className={cn(
-            "bg-card text-card-foreground px-4 py-2 text-sm",
-            isWinner && 'font-bold text-primary',
+            "bg-card text-card-foreground px-3 py-1 text-sm border border-border w-48",
             isBye && 'text-muted-foreground italic'
         )}>
             {name}
@@ -161,26 +160,38 @@ const PlayerBox = ({ player, isWinner }: { player: BracketPlayer, isWinner: bool
     );
 };
 
-const MatchComponent = ({ match, isWinnerDisplay }: { match: Match, isWinnerDisplay: boolean }) => {
-    if (isWinnerDisplay) {
-        return (
-             <div className="flex flex-col items-center gap-2">
-                <Trophy className="w-10 h-10 text-amber-400"/>
-                <div className="flex flex-col border-2 border-primary rounded-lg overflow-hidden w-48">
-                    <PlayerBox player={match.p1} isWinner={true} />
-                </div>
-            </div>
-        )
-    }
-
+const MatchComponent = ({ match, isFinal, isWinnerDisplay }: { match: Match, isFinal: boolean, isWinnerDisplay: boolean }) => {
+  if (isWinnerDisplay) {
     return (
-        <div className="flex flex-col border-2 border-border rounded-lg overflow-hidden w-48">
-            <PlayerBox player={match.p1} isWinner={match.winner?.name === match.p1?.name} />
-            {match.p2 && <div className="border-t-2 border-border" />}
-            {match.p2 && <PlayerBox player={match.p2} isWinner={match.winner?.name === match.p2?.name} />}
-        </div>
+      <div className="flex flex-col items-center justify-center">
+        <Trophy className="w-10 h-10 text-amber-400 mb-2"/>
+        <PlayerBox player={match.winner} />
+      </div>
     );
+  }
+  
+  return (
+    <div className="flex items-center">
+      <div className="flex flex-col gap-2">
+        <PlayerBox player={match.p1} />
+        {match.p2 && <PlayerBox player={match.p2} />}
+      </div>
+      <div className="w-6 h-full border-y-2 border-r-2 border-border -ml-[2px] rounded-r-md" style={{ height: match.p2 ? '50%' : '0' }}></div>
+    </div>
+  );
 };
+
+
+const BracketColumn = ({ round, isFinal, isWinnerDisplay, isFirst }: { round: BracketRound, isFinal: boolean, isWinnerDisplay: boolean, isFirst: boolean }) => (
+  <div className="flex flex-col justify-around h-full">
+    {round.matches.map((match, index) => (
+      <div key={index} className="flex items-center">
+        {!isFirst && <div className="w-6 h-[2px] bg-border"></div>}
+        <MatchComponent match={match} isFinal={isFinal} isWinnerDisplay={isWinnerDisplay} />
+      </div>
+    ))}
+  </div>
+);
 
 
 export default function TournamentsPage() {
@@ -514,33 +525,30 @@ export default function TournamentsPage() {
                                 </div>
                             </ScrollArea>
                         </div>
-                        {bracketRounds.length > 0 ? (
-                           <div className="flex w-full h-full justify-center">
-                                <ScrollArea className="h-full w-full">
-                                    <div className="flex items-start justify-center p-4 gap-x-12">
+                        <div className="flex justify-center items-center w-full h-full">
+                          {bracketRounds.length > 0 ? (
+                            <ScrollArea className="h-full w-full">
+                                <div className="flex justify-center p-4">
+                                    <div className="inline-flex items-start gap-8">
                                         {bracketRounds.map((round, roundIndex) => (
-                                            <div key={roundIndex} className="flex flex-col justify-around h-full space-y-6">
-                                                <h3 className="font-bold text-lg text-center mb-4">{round.title}</h3>
-                                                <div className="flex flex-col justify-around flex-grow gap-y-10">
-                                                    {round.matches.map((match, matchIndex) => (
-                                                        <MatchComponent 
-                                                            key={matchIndex} 
-                                                            match={match} 
-                                                            isWinnerDisplay={round.title === 'Winner'}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
+                                          <BracketColumn 
+                                            key={roundIndex}
+                                            round={round}
+                                            isFinal={round.title === 'Final'}
+                                            isWinnerDisplay={round.title === 'Winner'}
+                                            isFirst={roundIndex === 0}
+                                          />
                                         ))}
                                     </div>
-                                </ScrollArea>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center text-center p-8 border rounded-lg bg-muted/50 h-full">
-                                <GitMerge className="h-12 w-12 text-muted-foreground" />
-                                <p className="mt-4 text-muted-foreground">Add at least 2 players to generate a bracket.</p>
-                            </div>
-                        )}
+                                </div>
+                            </ScrollArea>
+                          ) : (
+                              <div className="flex flex-col items-center justify-center text-center p-8 border rounded-lg bg-muted/50 h-full w-full">
+                                  <GitMerge className="h-12 w-12 text-muted-foreground" />
+                                  <p className="mt-4 text-muted-foreground">Add at least 2 players to generate a bracket.</p>
+                              </div>
+                          )}
+                        </div>
                         </div>
                     </DialogContent>
                 </Dialog>
@@ -552,5 +560,3 @@ export default function TournamentsPage() {
     </div>
   );
 }
-
-    
