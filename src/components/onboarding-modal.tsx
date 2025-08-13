@@ -52,7 +52,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]">
-        <DialogHeader>
+        <DialogHeader className="py-4">
           <div className="flex justify-center">
              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
               <Rocket className="h-8 w-8" />
@@ -64,10 +64,10 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-1 py-4 min-h-0">
+        <div className="py-4 flex-1 min-h-0">
             <Carousel className="w-full h-full">
-            <CarouselContent>
-                <CarouselItem className="flex flex-col justify-center items-center">
+            <CarouselContent className="h-full">
+                <CarouselItem className="flex flex-col justify-center items-center h-full">
                 <div className="p-4 text-center space-y-4">
                     <h3 className="font-semibold text-lg">App Navigation</h3>
                     <p className="text-muted-foreground">
@@ -86,7 +86,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                     </div>
                 </div>
                 </CarouselItem>
-                <CarouselItem className="flex flex-col justify-center items-center">
+                <CarouselItem className="flex flex-col justify-center items-center h-full">
                 <div className="p-4 text-center space-y-4">
                     <h3 className="font-semibold text-lg">Create Your Player Profile</h3>
                     <p className="text-muted-foreground">
