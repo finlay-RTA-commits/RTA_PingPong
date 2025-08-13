@@ -68,13 +68,16 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
     if (participants.length < 2) return [];
 
     const findWinner = (p1: BracketPlayer, p2: BracketPlayer): Player | null => {
-        if (!p1 || !p2 || 'name' in p1 || 'name' in p2) return null;
+        if (!p1 || !p2 || p1.name === 'BYE' || p2.name === 'BYE') return null;
         const game = games.find(g =>
             g.tournamentId === tournamentId &&
             ((g.player1Id === p1.id && g.player2Id === p2.id) || (g.player1Id === p2.id && g.player2Id === p1.id))
         );
         if (!game) return null;
-        return game.score1 > game.score2 ? p1 : p2;
+        const p1Data = participants.find(p => p.id === p1.id);
+        const p2Data = participants.find(p => p.id === p2.id);
+        if (!p1Data || !p2Data) return null;
+        return game.score1 > game.score2 ? p1Data : p2Data;
     };
 
     const idealSize = Math.pow(2, Math.ceil(Math.log2(participants.length)));
@@ -83,55 +86,67 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
         shuffledParticipants.push({ name: 'BYE' });
     }
 
-    const bracket: BracketRound[] = [];
-    let currentRoundPlayers = shuffledParticipants;
+    const rounds: BracketRound[] = [];
+    let currentPlayers = shuffledParticipants;
     let roundNumber = 1;
 
-    while (currentRoundPlayers.length > 1) {
+    // --- Round 1 ---
+    const round1: BracketRound = { title: `Round 1`, matches: [] };
+    const round1Winners: BracketPlayer[] = [];
+    for (let i = 0; i < currentPlayers.length; i += 2) {
+        const p1 = currentPlayers[i];
+        const p2 = currentPlayers[i + 1];
+        if (p1?.name === 'BYE') {
+            round1Winners.push(p2);
+            round1.matches.push({ p1, p2, winner: p2 as Player });
+            continue;
+        }
+        if (p2?.name === 'BYE') {
+            round1Winners.push(p1);
+            round1.matches.push({ p1, p2, winner: p1 as Player });
+            continue;
+        }
+        const winner = findWinner(p1, p2);
+        round1.matches.push({ p1, p2, winner });
+        round1Winners.push(winner);
+    }
+    rounds.push(round1);
+    currentPlayers = round1Winners;
+    roundNumber++;
+
+    // --- Subsequent Rounds ---
+    while (currentPlayers.length > 1) {
         const roundTitle =
-            currentRoundPlayers.length === 2 ? "Final" :
-            currentRoundPlayers.length === 4 ? "Semi-Finals" :
-            currentRoundPlayers.length === 8 ? "Quarter-Finals" :
+            currentPlayers.length === 2 ? "Final" :
+            currentPlayers.length === 4 ? "Semi-Finals" :
+            currentPlayers.length === 8 ? "Quarter-Finals" :
             `Round ${roundNumber}`;
 
-        const round: BracketRound = { title: roundTitle, matches: [] };
-        const nextRoundPlayers: BracketPlayer[] = [];
+        const nextRound: BracketRound = { title: roundTitle, matches: [] };
+        const nextRoundWinners: BracketPlayer[] = [];
 
-        for (let i = 0; i < currentRoundPlayers.length; i += 2) {
-            const p1 = currentRoundPlayers[i];
-            const p2 = currentRoundPlayers[i + 1];
-
-            if (p1?.name === 'BYE') {
-                nextRoundPlayers.push(p2);
-                round.matches.push({ p1, p2, winner: p2 as Player });
-                continue;
-            }
-             if (p2?.name === 'BYE') {
-                nextRoundPlayers.push(p1);
-                round.matches.push({ p1, p2, winner: p1 as Player });
-                continue;
-            }
-
+        for (let i = 0; i < currentPlayers.length; i += 2) {
+            const p1 = currentPlayers[i];
+            const p2 = currentPlayers[i + 1];
             const winner = findWinner(p1, p2);
-            round.matches.push({ p1, p2, winner });
-            nextRoundPlayers.push(winner);
+            nextRound.matches.push({ p1: p1 ?? null, p2: p2 ?? null, winner });
+            nextRoundWinners.push(winner);
         }
-
-        bracket.push(round);
-        currentRoundPlayers = nextRoundPlayers;
+        rounds.push(nextRound);
+        currentPlayers = nextRoundWinners;
         roundNumber++;
-        if (roundNumber > 10) break; // Safety break
+         if (roundNumber > 10) break; // Safety break
     }
-
-    // Add final winner round
-    if (currentRoundPlayers.length === 1 && currentRoundPlayers[0]) {
-        bracket.push({
+    
+    // --- Winner Round ---
+    if (currentPlayers.length === 1 && currentPlayers[0]) {
+        rounds.push({
             title: 'Winner',
-            matches: [{ p1: currentRoundPlayers[0], p2: null, winner: currentRoundPlayers[0] as Player }]
+            matches: [{ p1: currentPlayers[0], p2: null, winner: currentPlayers[0] as Player }]
         });
     }
 
-    return bracket;
+    return rounds;
 };
 
 
