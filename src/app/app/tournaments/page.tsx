@@ -167,7 +167,7 @@ const PlayerBox = ({ player, isWinner }: { player: BracketPlayer, isWinner: bool
 
 const MatchComponent = ({ match }: { match: Match }) => {
     return (
-        <div className="flex flex-col border border-border rounded-lg overflow-hidden my-2">
+        <div className="flex flex-col border border-border rounded-lg overflow-hidden">
             <PlayerBox player={match.p1} isWinner={match.winner?.name === match.p1?.name} />
             <div className="border-t border-border w-full" />
             <PlayerBox player={match.p2} isWinner={match.winner?.name === match.p2?.name} />
@@ -510,24 +510,26 @@ export default function TournamentsPage() {
                             </ScrollArea>
                         </div>
                         {bracketRounds.length > 0 ? (
-                            <div className="flex justify-center w-full h-full">
+                           <div className="flex justify-center w-full h-full">
                                 <ScrollArea className="h-full w-full">
-                                    <div className="flex justify-center items-start p-4 space-x-8">
+                                    <div className="flex justify-start items-start p-4 space-x-16">
                                         {bracketRounds.map((round, roundIndex) => (
-                                            <div key={roundIndex} className="flex flex-col justify-around h-full">
+                                            <div key={roundIndex} className="flex flex-col justify-around">
                                                 <h3 className="font-bold text-lg mb-4 w-48 text-center">{round.title}</h3>
-                                                {round.title === 'Winner' && round.matches[0].winner ? (
-                                                    <div className="flex flex-col items-center gap-2">
-                                                        <Trophy className="w-10 h-10 text-amber-400"/>
-                                                        <div className="border border-amber-400 rounded-lg overflow-hidden bg-amber-400/10">
-                                                            <PlayerBox player={round.matches[0].winner} isWinner={true} />
+                                                <div className="space-y-10">
+                                                    {round.title === 'Winner' && round.matches[0].winner ? (
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <Trophy className="w-10 h-10 text-amber-400"/>
+                                                            <div className="border border-amber-400 rounded-lg overflow-hidden bg-amber-400/10">
+                                                                <PlayerBox player={round.matches[0].winner} isWinner={true} />
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ) : (
-                                                    round.matches.map((match, index) => (
-                                                        <MatchComponent key={index} match={match} />
-                                                    ))
-                                                )}
+                                                    ) : (
+                                                        round.matches.map((match, index) => (
+                                                            <MatchComponent key={index} match={match} />
+                                                        ))
+                                                    )}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -550,3 +552,5 @@ export default function TournamentsPage() {
     </div>
   );
 }
+
+    
