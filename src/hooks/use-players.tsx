@@ -157,11 +157,16 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
         }
         return player.achievements;
     };
+    
+    // Calculate Elo ranks for achievement check
+    const eloSortedPlayers = [...allPlayers]
+      .sort((a, b) => (b.stats?.elo ?? 0) - (a.stats?.elo ?? 0))
+      .map((p, index) => ({ ...p, eloRank: index + 1 }));
 
 
     const processPlayer = (playerId: string, ownScore: number, opponentScore: number, opponentId: string, newElo: number) => {
       const player = allPlayers.find(p => p.id === playerId);
-      const opponent = allPlayers.find(p => p.id === opponentId);
+      let opponent = allPlayers.find(p => p.id === opponentId);
       if (!player || !opponent) return;
 
       const playerRef = doc(db, "players", playerId);
@@ -232,7 +237,8 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
       const rival = allPlayers.find(p => p.id === rivalId)?.name || 'N/A';
 
       // --- Achievement Checks ---
-      if (wonGame && opponent.rank === 1) {
+      const opponentEloRank = eloSortedPlayers.find(p => p.id === opponentId)?.eloRank;
+      if (wonGame && (opponent.rank === 1 || opponentEloRank === 1)) {
           newAchievements = checkAndGrantAchievement(player, 'KING_SLAYER');
       }
       if (newWinStreak >= 5) {
