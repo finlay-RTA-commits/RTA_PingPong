@@ -102,7 +102,7 @@ export default function ProfilePage() {
         toast({
             variant: 'destructive',
             title: 'Image Too Large',
-            description: 'Please upload an image smaller than 500KB.',
+            description: 'Please upload an image no bigger than 500KB.',
         });
         return;
       }
