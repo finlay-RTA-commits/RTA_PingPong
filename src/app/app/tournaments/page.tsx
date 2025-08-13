@@ -512,7 +512,7 @@ export default function TournamentsPage() {
                         {bracketRounds.length > 0 ? (
                            <div className="flex justify-center w-full h-full">
                                 <ScrollArea className="h-full w-full">
-                                    <div className="flex justify-start items-start p-4 space-x-16">
+                                    <div className="flex justify-center items-start p-4 space-x-16">
                                         {bracketRounds.map((round, roundIndex) => (
                                             <div key={roundIndex} className="flex flex-col justify-around">
                                                 <h3 className="font-bold text-lg mb-4 w-48 text-center">{round.title}</h3>
