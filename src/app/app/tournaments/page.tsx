@@ -524,7 +524,7 @@ export default function TournamentsPage() {
                         </div>
                         <div className="flex flex-1 items-center justify-center overflow-auto p-4">
                           {bracketRounds.length > 0 ? (
-                            <div className="inline-flex items-start gap-x-12">
+                            <div className="inline-flex items-center gap-x-12">
                                 {bracketRounds.map((round, roundIndex) => (
                                 <div key={roundIndex} className="flex flex-col justify-around h-full w-48 space-y-4">
                                     <h4 className="text-center font-bold text-lg mb-4">{round.title}</h4>
