@@ -12,10 +12,12 @@ export type Player = {
   avatar: string;
   stats?: PlayerStats;
   tournamentsWon?: number;
+  achievements?: AchievementId[];
 };
 
 export type PlayerStats = {
   winStreak: number;
+  lossStreak: number;
   rival: string;
   highestStreak: number;
   elo: number;
@@ -41,6 +43,19 @@ export type Tournament = {
   imageUrl: string;
   enrolledPlayerIds: string[];
 };
+
+// === Gamification Types ===
+
+export const achievementData = {
+  KING_SLAYER: { id: 'KING_SLAYER', name: 'King Slayer', description: 'Defeat the #1 ranked player.', icon: 'Crown' },
+  HOT_STREAK: { id: 'HOT_STREAK', name: 'Hot Streak', description: 'Win 5 games in a row.', icon: 'Flame' },
+  WELCOME_TO_THE_BIG_LEAGUES: { id: 'WELCOME_TO_THE_BIG_LEAGUES', name: 'Welcome to the Big Leagues', description: 'Play your first tournament match.', icon: 'Ticket' },
+  BUTTERFINGERS: { id: 'BUTTERFINGERS', name: 'Butterfingers', description: 'Lose 5 games in a row.', icon: 'Droplet' },
+} as const;
+
+export type AchievementId = keyof typeof achievementData;
+export type Achievement = typeof achievementData[AchievementId];
+
 
 // === AI Flow Types ===
 

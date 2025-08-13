@@ -3,16 +3,17 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, writeBatch, getDocs, where } from 'firebase/firestore';
-import type { Player, Game } from '@/lib/types';
+import type { Player, Game, AchievementId } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { useToast } from './use-toast';
+import { achievementData } from '@/lib/types';
 
 interface PlayerContextType {
   players: Player[];
   addPlayer: (name: string, avatar: string, email: string, uid?: string) => Promise<void>;
   updatePlayer: (updatedPlayer: Player) => Promise<void>;
   removePlayer: (playerId: string) => Promise<void>;
-  updatePlayerStats: (player1Id: string, player2Id: string, score1: number, score2: number) => Promise<void>;
+  updatePlayerStats: (player1Id: string, player2Id: string, score1: number, score2: number, tournamentId?: string | null) => Promise<void>;
   loading: boolean;
 }
 
@@ -79,11 +80,13 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
             losses: 0,
             stats: {
                 winStreak: 0,
+                lossStreak: 0,
                 rival: 'N/A',
                 highestStreak: 0,
                 elo: DEFAULT_ELO,
             },
             tournamentsWon: 0,
+            achievements: [],
             uid: uid || null 
         });
     } catch(e) {
@@ -112,7 +115,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const updatePlayerStats = async (player1Id: string, player2Id: string, score1: number, score2: number) => {
+  const updatePlayerStats = async (player1Id: string, player2Id: string, score1: number, score2: number, tournamentId?: string | null) => {
     const batch = writeBatch(db);
     const allPlayers = players; 
     
@@ -143,16 +146,34 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
     const gamesSnapshot = await getDocs(query(collection(db, "games"), orderBy("date", "asc")));
     const allGames = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Game));
 
+    const checkAndGrantAchievement = (player: Player, achievementId: AchievementId) => {
+        if (!player.achievements?.includes(achievementId)) {
+            const achievement = achievementData[achievementId];
+            toast({
+                title: '🏆 Achievement Unlocked!',
+                description: `${player.name} earned: ${achievement.name}`,
+            });
+            return [...(player.achievements || []), achievementId];
+        }
+        return player.achievements;
+    };
+
+
     const processPlayer = (playerId: string, ownScore: number, opponentScore: number, opponentId: string, newElo: number) => {
       const player = allPlayers.find(p => p.id === playerId);
-      if (!player) return;
+      const opponent = allPlayers.find(p => p.id === opponentId);
+      if (!player || !opponent) return;
 
       const playerRef = doc(db, "players", playerId);
       const wonGame = ownScore > opponentScore;
+      let newAchievements = [...(player.achievements || [])];
 
       // Calculate wins and losses
       const newWins = player.wins + (wonGame ? 1 : 0);
       const newLosses = player.losses + (wonGame ? 0 : 1);
+      
+      const newWinStreak = wonGame ? (player.stats?.winStreak ?? 0) + 1 : 0;
+      const newLossStreak = !wonGame ? (player.stats?.lossStreak ?? 0) + 1 : 0;
 
       // Get all games for this player, including the one just played
       const playerGames = [
@@ -162,7 +183,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
       ].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
 
-      // Calculate current win streak
+      // Calculate current win streak (legacy)
       let currentStreak = 0;
       for (let i = playerGames.length - 1; i >= 0; i--) {
         const game = playerGames[i];
@@ -195,27 +216,44 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
 
       // Calculate rival
       const opponentCounts = playerGames.reduce((acc, game) => {
-          const opponent = game.player1Id === playerId ? game.player2Id : game.player1Id;
-          acc[opponent] = (acc[opponent] || 0) + 1;
+          const gameOpponent = game.player1Id === playerId ? game.player2Id : game.player1Id;
+          acc[gameOpponent] = (acc[gameOpponent] || 0) + 1;
           return acc;
       }, {} as Record<string, number>);
 
       let rivalId = 'N/A';
       let maxGames = 0;
-      for (const [opponent, count] of Object.entries(opponentCounts)) {
+      for (const [o, count] of Object.entries(opponentCounts)) {
           if (count > maxGames) {
               maxGames = count;
-              rivalId = opponent;
+              rivalId = o;
           }
       }
       const rival = allPlayers.find(p => p.id === rivalId)?.name || 'N/A';
+
+      // --- Achievement Checks ---
+      if (wonGame && opponent.rank === 1) {
+          newAchievements = checkAndGrantAchievement(player, 'KING_SLAYER');
+      }
+      if (newWinStreak >= 5) {
+          newAchievements = checkAndGrantAchievement(player, 'HOT_STREAK');
+      }
+      if (newLossStreak >= 5) {
+          newAchievements = checkAndGrantAchievement(player, 'BUTTERFINGERS');
+      }
+      if(tournamentId) {
+          newAchievements = checkAndGrantAchievement(player, 'WELCOME_TO_THE_BIG_LEAGUES');
+      }
+
 
       // Update batch
       batch.update(playerRef, {
         wins: newWins,
         losses: newLosses,
+        achievements: newAchievements,
         stats: {
-          winStreak: currentStreak,
+          winStreak: newWinStreak,
+          lossStreak: newLossStreak,
           highestStreak: highestStreak,
           rival: rival,
           elo: newElo,

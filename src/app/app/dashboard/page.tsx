@@ -111,6 +111,7 @@ export default function DashboardPage() {
     const score1 = parseInt(formData.get('score1') as string, 10);
     const score2 = parseInt(formData.get('score2') as string, 10);
     const tournamentIdStr = formData.get('tournament') as string;
+    const tournamentId = tournamentIdStr && tournamentIdStr !== 'exhibition' ? tournamentIdStr : null;
 
     if (!player1Id || !player2Id || isNaN(score1) || isNaN(score2)) {
       toast({ variant: 'destructive', title: 'Error', description: 'Please fill out all fields correctly.' });
@@ -130,7 +131,7 @@ export default function DashboardPage() {
       return;
     }
 
-    await updatePlayerStats(player1Id, player2Id, score1, score2);
+    await updatePlayerStats(player1Id, player2Id, score1, score2, tournamentId);
     
     const newGame = {
       player1Id,
@@ -138,7 +139,7 @@ export default function DashboardPage() {
       score1,
       score2,
       date: new Date().toISOString(),
-      tournamentId: tournamentIdStr && tournamentIdStr !== 'exhibition' ? tournamentIdStr : null
+      tournamentId: tournamentId
     };
     
     await addDoc(collection(db, 'games'), newGame);

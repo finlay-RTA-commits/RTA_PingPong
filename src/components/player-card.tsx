@@ -3,12 +3,50 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { Player } from '@/lib/types';
-import { Flame, Mail, Star, Swords, Trophy, BarChart } from 'lucide-react';
+import { Flame, Mail, Star, Swords, Trophy, BarChart, Crown, Ticket, Droplet } from 'lucide-react';
 import { Button } from './ui/button';
+import { achievementData, Achievement, AchievementId } from '@/lib/types';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 interface PlayerCardProps {
   player: Player;
 }
+
+const achievementIcons: Record<AchievementId, React.ElementType> = {
+  KING_SLAYER: Crown,
+  HOT_STREAK: Flame,
+  WELCOME_TO_THE_BIG_LEAGUES: Ticket,
+  BUTTERFINGERS: Droplet,
+};
+
+
+const AchievementBadge = ({ achievement }: { achievement: Achievement }) => {
+  const Icon = achievementIcons[achievement.id as AchievementId];
+
+  return (
+    <TooltipProvider>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <div className={cn(
+                    "h-8 w-8 rounded-full flex items-center justify-center border-2",
+                    achievement.id === 'KING_SLAYER' && 'bg-amber-100 border-amber-400 text-amber-500',
+                    achievement.id === 'HOT_STREAK' && 'bg-orange-100 border-orange-400 text-orange-500',
+                    achievement.id === 'WELCOME_TO_THE_BIG_LEAGUES' && 'bg-blue-100 border-blue-400 text-blue-500',
+                    achievement.id === 'BUTTERFINGERS' && 'bg-gray-100 border-gray-400 text-gray-500',
+                )}>
+                    <Icon className="h-5 w-5" />
+                </div>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p className="font-bold">{achievement.name}</p>
+                <p>{achievement.description}</p>
+            </TooltipContent>
+        </Tooltip>
+    </TooltipProvider>
+  )
+}
+
 
 export function PlayerCard({ player }: PlayerCardProps) {
   const winRate = player.wins + player.losses > 0 ? ((player.wins / (player.wins + player.losses)) * 100).toFixed(0) : 0;
@@ -26,6 +64,10 @@ export function PlayerCard({ player }: PlayerCardProps) {
   };
 
   const gmailLink = generateGmailLink();
+
+  const unlockedAchievements = (player.achievements || [])
+    .map(id => achievementData[id])
+    .filter(Boolean);
 
   return (
     <Card className="overflow-hidden bg-gradient-to-br from-card to-muted/50 shadow-lg flex flex-col">
@@ -63,6 +105,19 @@ export function PlayerCard({ player }: PlayerCardProps) {
                 <p className="text-2xl font-bold">{winRate}</p>
             </div>
         </div>
+        
+        {unlockedAchievements.length > 0 && (
+          <>
+          <Separator className="my-4" />
+           <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground text-center">ACHIEVEMENTS</p>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {unlockedAchievements.map(ach => <AchievementBadge key={ach.id} achievement={ach} />)}
+              </div>
+           </div>
+          </>
+        )}
+
         <Separator className="my-4" />
         <div className="space-y-3 text-sm">
             <div className="flex items-center justify-between">
