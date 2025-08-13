@@ -35,14 +35,12 @@ function ProfilePageContent() {
   const { user, loading: authLoading } = useAuth();
   const { players, addPlayer, updatePlayer, loading: playersLoading } = usePlayers();
   const { toast } = useToast();
-  const searchParams = useSearchParams();
   
   const [currentUserStats, setCurrentUserStats] = useState<Player | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [avatar, setAvatar] = useState('https://placehold.co/80x80.png');
   const [isSaving, setIsSaving] = useState(false);
   const [isNewPlayerDialogOpen, setIsNewPlayerDialogOpen] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (user && !playersLoading) {
@@ -54,23 +52,14 @@ function ProfilePageContent() {
         setAvatar(player.avatar);
         setIsNewPlayerDialogOpen(false); 
       } else {
-        // This is a new user, check for onboarding
+        // This is a new user, prompt to create profile
         setDisplayName(user.displayName || '');
         setAvatar(user.photoURL || 'https://placehold.co/80x80.png');
         setCurrentUserStats(null);
-
-        const isNewUserFromSignup = searchParams.get('new_user') === 'true';
-        const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
-
-        if (isNewUserFromSignup && !hasSeenOnboarding) {
-            setShowOnboarding(true);
-        } else {
-            // Show create profile dialog if not showing onboarding
-            setIsNewPlayerDialogOpen(true);
-        }
+        setIsNewPlayerDialogOpen(true);
       }
     }
-  }, [user, players, playersLoading, searchParams]);
+  }, [user, players, playersLoading]);
 
   const handleSave = async () => {
     if(!user) return;
@@ -136,15 +125,6 @@ function ProfilePageContent() {
       }
     }
   };
-
-  const handleOnboardingFinish = () => {
-    setShowOnboarding(false);
-    localStorage.setItem('hasSeenOnboarding', 'true');
-    // If it was a new user, open the profile creation dialog after onboarding
-    if (!currentUserStats) {
-        setIsNewPlayerDialogOpen(true);
-    }
-  }
   
   const totalGames = currentUserStats ? currentUserStats.wins + currentUserStats.losses : 0;
   const winRate = totalGames > 0 ? ((currentUserStats!.wins / totalGames) * 100).toFixed(1) : "0";
@@ -192,12 +172,6 @@ function ProfilePageContent() {
 
   return (
     <>
-    <OnboardingModal open={showOnboarding} onOpenChange={(open) => {
-        if (!open) {
-            handleOnboardingFinish();
-        }
-    }} />
-
     <Dialog open={isNewPlayerDialogOpen} onOpenChange={setIsNewPlayerDialogOpen}>
       <DialogContent onInteractOutside={(e) => e.preventDefault()} className="sm:max-w-[425px]">
         <DialogHeader>

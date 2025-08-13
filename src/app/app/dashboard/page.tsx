@@ -1,8 +1,9 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,15 +52,34 @@ import {
 } from "@/components/ui/tooltip"
 import { collection, onSnapshot, addDoc, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { OnboardingModal } from '@/components/onboarding-modal';
 
-export default function DashboardPage() {
+function DashboardPageContent() {
   const { players, updatePlayerStats } = usePlayers();
   const [games, setGames] = useState<Game[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const { toast } = useToast();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const searchParams = useSearchParams();
 
+  useEffect(() => {
+    const isNewUser = searchParams.get('new_user') === 'true';
+    const hasSeenOnboarding = typeof window !== 'undefined' ? localStorage.getItem('hasSeenOnboarding') : null;
+
+    if (isNewUser && !hasSeenOnboarding) {
+      setShowOnboarding(true);
+    }
+  }, [searchParams]);
+
+  const handleOnboardingFinish = () => {
+    setShowOnboarding(false);
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('hasSeenOnboarding', 'true');
+    }
+  };
+  
   useEffect(() => {
     const timer = setInterval(() => {
         setCurrentTime(new Date());
@@ -165,6 +185,11 @@ export default function DashboardPage() {
 
   return (
     <>
+    <OnboardingModal open={showOnboarding} onOpenChange={(open) => {
+        if (!open) {
+            handleOnboardingFinish();
+        }
+    }} />
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <Card className="lg:col-span-1 flex flex-col">
         <CardHeader>
@@ -406,4 +431,12 @@ export default function DashboardPage() {
     </TooltipProvider>
     </>
   );
+}
+
+export default function DashboardPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <DashboardPageContent />
+        </Suspense>
+    )
 }

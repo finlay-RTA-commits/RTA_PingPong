@@ -36,7 +36,7 @@ export default function LoginPage() {
         router.push('/app/dashboard');
       } else {
         await createUserWithEmailAndPassword(auth, email, password);
-        router.push('/app/profile?new_user=true');
+        router.push('/app/dashboard?new_user=true');
       }
     } catch (error: any) {
       toast({
