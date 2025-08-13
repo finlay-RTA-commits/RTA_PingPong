@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar, PlusCircle, Users, GitMerge, Edit, Trash2, UserX, Hourglass } from "lucide-react";
+import { Calendar, PlusCircle, Users, GitMerge, Edit, Trash2, UserX, Hourglass, Trophy } from "lucide-react";
 import type { Tournament, Player, Game } from '@/lib/types';
 import { usePlayers } from '@/hooks/use-players';
 import { useToast } from '@/hooks/use-toast';
@@ -52,13 +52,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
+
 type BracketPlayer = Player | { name: 'BYE' } | { name: 'TBD' } | null;
 
 interface Match {
-  p1: BracketPlayer;
-  p2: BracketPlayer;
-  winner: BracketPlayer;
+    p1: BracketPlayer;
+    p2: BracketPlayer;
+    winner: BracketPlayer;
 }
+
 interface BracketRound {
     title: string;
     matches: Match[];
@@ -82,60 +84,60 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
     while (idealSize < participants.length) {
         idealSize *= 2;
     }
+
+    const seededPlayers: BracketPlayer[] = [...participants];
+    while(seededPlayers.length < idealSize) {
+        seededPlayers.push({ name: 'BYE' });
+    }
     
-    let seededPlayers: BracketPlayer[] = [...participants].sort(() => Math.random() - 0.5);
-    const byes = idealSize - participants.length;
-    for (let i = 0; i < byes; i++) {
-        const byeIndex = Math.floor(Math.random() * (seededPlayers.length + 1));
-        seededPlayers.splice(byeIndex, 0, { name: 'BYE' });
+    // Shuffle players for random seeding
+    for (let i = seededPlayers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [seededPlayers[i], seededPlayers[j]] = [seededPlayers[j], seededPlayers[i]];
     }
 
     const rounds: BracketRound[] = [];
-    const round1: BracketRound = { title: 'Round 1', matches: [] };
-    for (let i = 0; i < seededPlayers.length; i += 2) {
-        const p1 = seededPlayers[i];
-        const p2 = seededPlayers[i+1];
-        let winner: BracketPlayer = null;
-        if (p1?.name === 'BYE') winner = p2;
-        else if (p2?.name === 'BYE') winner = p1;
-        else winner = findWinner(p1, p2);
-        round1.matches.push({ p1, p2, winner });
-    }
-    rounds.push(round1);
+    let currentPlayers: BracketPlayer[] = seededPlayers;
+    let roundNum = 1;
 
-    let previousRoundWinners: BracketPlayer[] = round1.matches.map(m => m.winner);
-    let roundNum = 2;
-    
-    while(previousRoundWinners.length > 1) {
-        const nextRound: BracketRound = { title: `Round ${roundNum}`, matches: [] };
-        const nextRoundWinners: BracketPlayer[] = [];
+    while(currentPlayers.length > 1) {
+        const roundTitle = 
+            currentPlayers.length === 2 ? 'Final' :
+            currentPlayers.length === 4 ? 'Semi-Finals' :
+            currentPlayers.length === 8 ? 'Quarter-Finals' :
+            `Round ${roundNum}`;
+        
+        const round: BracketRound = { title: roundTitle, matches: [] };
+        const nextRoundPlayers: BracketPlayer[] = [];
 
-        for (let i = 0; i < previousRoundWinners.length; i += 2) {
-            const p1 = previousRoundWinners[i];
-            const p2 = previousRoundWinners[i+1];
-            const winner = findWinner(p1, p2);
-            nextRound.matches.push({ 
-                p1: p1 || { name: 'TBD' },
-                p2: p2 || { name: 'TBD' },
-                winner 
-            });
-            nextRoundWinners.push(winner);
+        for(let i = 0; i < currentPlayers.length; i+=2) {
+            const p1 = currentPlayers[i];
+            const p2 = currentPlayers[i+1];
+            let winner: BracketPlayer = null;
+
+            if (p1?.name === 'BYE') {
+                winner = p2;
+            } else if (p2?.name === 'BYE') {
+                winner = p1;
+            } else if (p1 && p2) {
+                winner = findWinner(p1, p2);
+            }
+            
+            round.matches.push({ p1: p1 || {name: 'TBD'}, p2: p2 || {name: 'TBD'}, winner });
+            nextRoundPlayers.push(winner || {name: 'TBD'});
         }
         
-        if (nextRound.matches.length === 1) nextRound.title = 'Final';
-        else if (nextRound.matches.length === 2) nextRound.title = 'Semi-Finals';
-        else if (nextRound.matches.length === 4) nextRound.title = 'Quarter-Finals';
-
-        rounds.push(nextRound);
-        previousRoundWinners = nextRoundWinners;
+        rounds.push(round);
+        currentPlayers = nextRoundPlayers;
         roundNum++;
     }
-
-    const finalMatch = rounds[rounds.length - 1]?.matches[0];
-    if (finalMatch && finalMatch.winner) {
+    
+    // Add winner "round"
+    const finalMatch = rounds[rounds.length-1]?.matches[0];
+    if(finalMatch && finalMatch.winner && finalMatch.winner.name !== 'TBD') {
         rounds.push({
             title: 'Winner',
-            matches: [{ p1: finalMatch.winner, p2: null, winner: finalMatch.winner }]
+            matches: [{p1: finalMatch.winner, p2: null, winner: finalMatch.winner}]
         });
     }
 
@@ -300,20 +302,21 @@ export default function TournamentsPage() {
       return <span className="font-semibold text-accent">{hours} hours to go</span>;
   }
   
-  const isDisqualified = (tournamentDate: string) => {
-      const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
-      const tournamentStartDate = new Date(tournamentDate).getTime();
-      const now = new Date().getTime();
-      return now - tournamentStartDate > THREE_DAYS;
-  }
-
   const enrolledPlayers = useMemo(() => selectedTournament ? players.filter(p => selectedTournament.enrolledPlayerIds.includes(p.id)) : [], [players, selectedTournament]);
   const availablePlayers = useMemo(() => selectedTournament ? players.filter(p => !selectedTournament.enrolledPlayerIds.includes(p.id)) : [], [players, selectedTournament]);
-  const bracket = useMemo(() => {
+  const bracketRounds = useMemo(() => {
     if (!selectedTournament) return [];
     const tournamentSpecificGames = tournamentGames.filter(g => g.tournamentId === selectedTournament.id);
     return generateBracket(enrolledPlayers, tournamentSpecificGames, selectedTournament.id);
   }, [selectedTournament, enrolledPlayers, tournamentGames]);
+
+  // Split rounds for two-sided bracket
+  const midPoint = Math.ceil(bracketRounds.length / 2);
+  const leftRounds = bracketRounds.slice(0, midPoint);
+  const finalRound = bracketRounds[midPoint];
+  const rightRounds = bracketRounds.slice(midPoint + 1).reverse();
+  const winner = bracketRounds[bracketRounds.length - 1]?.title === 'Winner' ? bracketRounds[bracketRounds.length - 1].matches[0].winner : null;
+
 
   return (
     <div className="space-y-6">
@@ -482,49 +485,72 @@ export default function TournamentsPage() {
                                 </div>
                             </ScrollArea>
                         </div>
-                            {bracket.length > 0 ? (
+                            {bracketRounds.length > 0 ? (
                                 <ScrollArea className="h-full">
-                                    <div className="flex items-start p-4 space-x-8">
-                                    {bracket.map((round, roundIndex) => (
-                                        <div key={roundIndex} className="flex flex-col items-center space-y-4 min-w-[200px]">
-                                            <h3 className="font-bold text-lg">{round.title}</h3>
-                                            <div className="flex-1 w-full flex flex-col justify-around">
-                                                {round.matches.map((match, matchIndex) => {
-                                                    const p1IsWinner = match.winner && match.p1 && 'id' in match.p1 && 'id' in match.winner && match.winner.id === match.p1.id;
-                                                    const p2IsWinner = match.winner && match.p2 && 'id' in match.p2 && 'id' in match.winner && match.winner.id === match.p2.id;
-                                                    const isWinnerRound = round.title === 'Winner';
-                                                    
-                                                    const isLastMatchInRound = matchIndex === round.matches.length -1;
-                                                    const isNextRoundFinal = bracket[roundIndex+1]?.title === 'Final';
-                                                    const isNextRoundWinner = bracket[roundIndex+1]?.title === 'Winner';
-                                                    
-                                                    return (
+                                    <div className="flex justify-center items-start p-4">
+                                        {/* Left Side */}
+                                        <div className="flex flex-row-reverse items-center">
+                                            {leftRounds.map((round, roundIndex) => (
+                                                <div key={`left-${roundIndex}`} className="flex flex-col justify-around mx-4">
+                                                    <h3 className="font-bold text-lg text-center mb-4">{round.title}</h3>
+                                                    {round.matches.map((match, matchIndex) => (
                                                         <div key={matchIndex} className="flex items-center">
-                                                            <div className="flex flex-col space-y-2 w-48 my-4">
-                                                                <div className={cn("border p-2 rounded-md bg-muted/50 text-sm", p1IsWinner && 'font-bold border-primary', match.p1?.name === 'BYE' && 'opacity-0' )}>{match.p1?.name ?? 'TBD'}</div>
-                                                                {!isWinnerRound && <div className={cn("border p-2 rounded-md bg-muted/50 text-sm", p2IsWinner && 'font-bold border-primary', match.p2?.name === 'BYE' && 'opacity-0')}>{match.p2?.name ?? 'TBD'}</div>}
+                                                            <div className="flex flex-col w-48 space-y-2 my-2">
+                                                                <div className={cn("border p-2 rounded-md bg-muted/50 text-sm", match.winner === match.p1 && match.p1?.name !== 'BYE' && 'font-bold border-primary')}>{match.p1?.name ?? 'TBD'}</div>
+                                                                {match.p2 && <div className={cn("border p-2 rounded-md bg-muted/50 text-sm", match.winner === match.p2 && match.p2?.name !== 'BYE' && 'font-bold border-primary')}>{match.p2?.name ?? 'TBD'}</div>}
                                                             </div>
-
-                                                            {!isNextRoundWinner && !isWinnerRound && (
-                                                                <div className="relative w-12 h-full flex items-center">
-                                                                    {/* Straight line out */}
-                                                                    <div className="w-1/2 h-px bg-border"></div>
-                                                                    {/* Vertical connector for pairs */}
-                                                                    {!isLastMatchInRound && matchIndex % 2 === 0 && (
-                                                                        <div className="absolute top-0 left-1/2 w-px h-full bg-border"></div>
-                                                                    )}
-                                                                    {/* Elbow to next round */}
-                                                                     {matchIndex % 2 === 0 && (
-                                                                        <div className="absolute top-1/2 left-1/2 w-1/2 h-px bg-border"></div>
-                                                                     )}
+                                                            {round.title !== 'Final' && (
+                                                                <div className="w-8 h-px bg-border relative">
+                                                                    <div className={cn("absolute bg-border w-px", matchIndex % 2 === 0 ? 'h-[calc(100%+1rem)] top-0 left-0' : 'h-0')}></div>
                                                                 </div>
                                                             )}
                                                         </div>
-                                                    )
-                                                })}
-                                            </div>
+                                                    ))}
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
+
+                                        {/* Final & Winner */}
+                                        <div className="flex flex-col items-center mx-8">
+                                            {finalRound && (
+                                                <>
+                                                    <h3 className="font-bold text-lg text-center mb-4">{finalRound.title}</h3>
+                                                    <div className="flex flex-col w-48 space-y-2 my-2">
+                                                        <div className={cn("border p-2 rounded-md bg-muted/50 text-sm", finalRound.matches[0].winner === finalRound.matches[0].p1 && 'font-bold border-primary')}>{finalRound.matches[0].p1?.name ?? 'TBD'}</div>
+                                                        <div className={cn("border p-2 rounded-md bg-muted/50 text-sm", finalRound.matches[0].winner === finalRound.matches[0].p2 && 'font-bold border-primary')}>{finalRound.matches[0].p2?.name ?? 'TBD'}</div>
+                                                    </div>
+                                                </>
+                                            )}
+                                            {winner && 'name' in winner && (
+                                                 <div className="flex flex-col items-center mt-8">
+                                                    <Trophy className="w-10 h-10 text-amber-400"/>
+                                                    <div className="font-bold text-xl mt-2 p-2 border-2 border-amber-400 rounded-lg">{winner.name}</div>
+                                                    <div className="w-px h-8 bg-border mt-2"></div>
+                                                 </div>
+                                            )}
+                                        </div>
+                                        
+                                        {/* Right Side */}
+                                        <div className="flex">
+                                            {rightRounds.map((round, roundIndex) => (
+                                                <div key={`right-${roundIndex}`} className="flex flex-col justify-around mx-4">
+                                                    <h3 className="font-bold text-lg text-center mb-4">{round.title}</h3>
+                                                    {round.matches.map((match, matchIndex) => (
+                                                         <div key={matchIndex} className="flex items-center">
+                                                            {round.title !== 'Final' && (
+                                                                <div className="w-8 h-px bg-border relative">
+                                                                     <div className={cn("absolute bg-border w-px", matchIndex % 2 === 0 ? 'h-[calc(100%+1rem)] top-0 right-0' : 'h-0')}></div>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex flex-col w-48 space-y-2 my-2">
+                                                                <div className={cn("border p-2 rounded-md bg-muted/50 text-sm", match.winner === match.p1 && match.p1?.name !== 'BYE' && 'font-bold border-primary')}>{match.p1?.name ?? 'TBD'}</div>
+                                                                {match.p2 && <div className={cn("border p-2 rounded-md bg-muted/50 text-sm", match.winner === match.p2 && match.p2?.name !== 'BYE' && 'font-bold border-primary')}>{match.p2?.name ?? 'TBD'}</div>}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                  </ScrollArea>
                             ) : (
@@ -544,6 +570,3 @@ export default function TournamentsPage() {
     </div>
   );
 }
-
-
-    
