@@ -97,18 +97,29 @@ export default function ProfilePage() {
   
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && (file.type === 'image/jpeg' || file.type === 'image/png')) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatar(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    } else {
+    if (file) {
+      if (file.size > 500 * 1024) { // 500KB limit
         toast({
             variant: 'destructive',
-            title: 'Invalid File Type',
-            description: 'Please upload a JPG or PNG image.',
+            title: 'Image Too Large',
+            description: 'Please upload an image smaller than 500KB.',
         });
+        return;
+      }
+
+      if (file.type === 'image/jpeg' || file.type === 'image/png') {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setAvatar(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+          toast({
+              variant: 'destructive',
+              title: 'Invalid File Type',
+              description: 'Please upload a JPG or PNG image.',
+          });
+      }
     }
   };
   
