@@ -55,7 +55,6 @@ export default function ProfilePage() {
         const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
         if (!hasSeenOnboarding) {
             setShowOnboarding(true);
-            localStorage.setItem('hasSeenOnboarding', 'true');
         } else {
             setIsNewPlayerDialogOpen(true);
         }
@@ -133,6 +132,7 @@ export default function ProfilePage() {
 
   const handleOnboardingFinish = () => {
     setShowOnboarding(false);
+    localStorage.setItem('hasSeenOnboarding', 'true');
     // If it was a new user, open the profile creation dialog after onboarding
     if (!currentUserStats) {
         setIsNewPlayerDialogOpen(true);
