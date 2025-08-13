@@ -74,17 +74,14 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
         idealSize *= 2;
     }
 
-    const seededPlayers: BracketPlayer[] = [...participants];
-    // Simple seeding for now, can be replaced with actual seeding logic
+    const seededPlayers: BracketPlayer[] = [...participants].sort(() => Math.random() - 0.5); // Randomize for now
     for (let i = seededPlayers.length; i < idealSize; i++) {
         seededPlayers.push({ name: 'BYE' });
     }
 
     const rounds: BracketRound[] = [];
     let currentRoundPlayers = seededPlayers;
-    let roundNum = 1;
 
-    // --- Function to find the winner of a match ---
     const findWinner = (p1: BracketPlayer, p2: BracketPlayer): BracketPlayer | null => {
         if (!p1 || !p2) return null;
         if (p1.name === 'BYE') return p2;
@@ -104,41 +101,30 @@ const generateBracket = (participants: Player[], games: Game[], tournamentId: st
                 return participants.find(p => p.id === winnerId) || null;
             }
         }
-        return null; // No game found
+        return null;
     };
     
-    // --- Build all rounds structure first ---
-    let roundsCount = Math.log2(idealSize);
-    if(idealSize === 2) roundsCount = 1;
-
-    let previousRoundMatches: Match[] = [];
-    
-    for (let i = 0; i < roundsCount; i++) {
+    let roundNum = 1;
+    while (currentRoundPlayers.length > 1) {
         const roundTitle =
-            (idealSize / Math.pow(2, i)) === 2 ? 'Final'
-            : (idealSize / Math.pow(2, i)) === 4 ? 'Semi-Finals'
-            : `Round ${i + 1}`;
+            currentRoundPlayers.length === 2 ? 'Final'
+            : currentRoundPlayers.length === 4 ? 'Semi-Finals'
+            : `Round ${roundNum}`;
 
         const currentRound: BracketRound = { title: roundTitle, matches: [] };
+        const nextRoundPlayers: BracketPlayer[] = [];
         
-        if (i === 0) { // First round from seeded players
-            for (let j = 0; j < seededPlayers.length; j += 2) {
-                const p1 = seededPlayers[j];
-                const p2 = seededPlayers[j+1];
-                currentRound.matches.push({ p1, p2, winner: findWinner(p1, p2) });
-            }
-        } else { // Subsequent rounds
-            for (let j = 0; j < previousRoundMatches.length; j += 2) {
-                const match1 = previousRoundMatches[j];
-                const match2 = previousRoundMatches[j+1];
-                const p1 = match1.winner || { name: 'TBD' };
-                const p2 = match2.winner || { name: 'TBD' };
-                currentRound.matches.push({ p1, p2, winner: findWinner(p1, p2) });
-            }
+        for (let i = 0; i < currentRoundPlayers.length; i += 2) {
+            const p1 = currentRoundPlayers[i];
+            const p2 = currentRoundPlayers[i+1];
+            const winner = findWinner(p1, p2);
+            currentRound.matches.push({ p1, p2, winner });
+            nextRoundPlayers.push(winner || { name: 'TBD' });
         }
         
         rounds.push(currentRound);
-        previousRoundMatches = currentRound.matches;
+        currentRoundPlayers = nextRoundPlayers;
+        roundNum++;
     }
     
     const finalMatch = rounds[rounds.length - 1]?.matches[0];
@@ -164,19 +150,19 @@ const PlayerBox = ({ player, isWinner }: { player: BracketPlayer, isWinner: bool
     );
 };
 
-const MatchComponent = ({ match }: { match: Match }) => {
-    const isP1Winner = match.winner && 'id' in match.winner && match.p1 && 'id' in match.p1 && match.winner.id === match.p1.id;
-    const isP2Winner = match.winner && 'id' in match.winner && match.p2 && 'id' in match.p2 && match.winner.id === match.p2.id;
+const MatchComponent = ({ match, isFinal }: { match: Match, isFinal: boolean }) => {
+    const isP1Winner = match.winner && match.p1 && 'id' in match.p1 && 'id' in match.winner && match.winner.id === match.p1.id;
+    const isP2Winner = match.winner && match.p2 && 'id' in match.p2 && 'id' in match.winner && match.winner.id === match.p2.id;
     
     return (
-        <div className="flex flex-col justify-center relative">
-            <div className="space-y-2">
-                <PlayerBox player={match.p1} isWinner={!!isP1Winner} />
-                <PlayerBox player={match.p2} isWinner={!!isP2Winner} />
-            </div>
+        <div className="flex flex-col justify-center relative my-4">
+            <PlayerBox player={match.p1} isWinner={!!isP1Winner} />
+            <div className="h-4" /> 
+            <PlayerBox player={match.p2} isWinner={!!isP2Winner} />
+
             {/* Connector Lines */}
-            <div className="absolute left-full top-1/2 -translate-y-1/2 h-[calc(50%+1rem)] w-6 border-r border-b border-border"></div>
-            <div className="absolute left-full top-1/2 h-px w-6 bg-border"></div>
+            <div className="absolute left-full top-1/2 -translate-y-1/2 w-8 h-[calc(50%+1rem+2px)] border-r border-y border-border" />
+            <div className="absolute left-[calc(100%+2rem)] top-1/2 w-8 h-px bg-border" />
         </div>
     );
 };
@@ -518,9 +504,9 @@ export default function TournamentsPage() {
                                 <ScrollArea className="h-full">
                                     <div className="flex items-start p-4 space-x-8">
                                         {bracketRounds.map((round, roundIndex) => (
-                                            <div key={roundIndex} className="flex flex-col items-center space-y-4">
-                                                <h3 className="font-bold text-lg text-center mb-4 min-h-8">{round.title !== 'Winner' ? round.title : ''}</h3>
-                                                <div className="flex flex-col justify-around flex-1 space-y-10">
+                                            <div key={roundIndex} className="flex flex-col items-center flex-shrink-0">
+                                                <h3 className="font-bold text-lg text-center mb-8">{round.title}</h3>
+                                                <div className="flex flex-col justify-around flex-1 w-full space-y-10">
                                                     {round.title === 'Winner' && round.matches[0].winner ? (
                                                         <div className="flex flex-col items-center gap-2">
                                                             <Trophy className="w-10 h-10 text-amber-400"/>
@@ -529,7 +515,7 @@ export default function TournamentsPage() {
                                                     ) : (
                                                         round.matches.map((match, matchIndex) => (
                                                           <div key={matchIndex} className="relative">
-                                                            <MatchComponent match={match} />
+                                                            <MatchComponent match={match} isFinal={round.title === 'Final'}/>
                                                           </div>
                                                         ))
                                                     )}
@@ -555,5 +541,3 @@ export default function TournamentsPage() {
     </div>
   );
 }
-
-    
