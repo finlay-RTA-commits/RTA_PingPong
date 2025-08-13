@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,10 +31,11 @@ import type { Player } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OnboardingModal } from '@/components/onboarding-modal';
 
-export default function ProfilePage() {
+function ProfilePageContent() {
   const { user, loading: authLoading } = useAuth();
   const { players, addPlayer, updatePlayer, loading: playersLoading } = usePlayers();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
   
   const [currentUserStats, setCurrentUserStats] = useState<Player | null>(null);
   const [displayName, setDisplayName] = useState('');
@@ -43,13 +45,22 @@ export default function ProfilePage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
+    if (searchParams.get('new_user') === 'true') {
+        const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
+        if (!hasSeenOnboarding) {
+            setShowOnboarding(true);
+        }
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     if (user && !playersLoading) {
       const player = players.find(p => p.uid === user.uid);
       if (player) {
         setCurrentUserStats(player);
         setDisplayName(player.name);
         setAvatar(player.avatar);
-        setIsNewPlayerDialogOpen(false); // Make sure dialog is closed for existing players
+        setIsNewPlayerDialogOpen(false); 
       } else {
         // This is a new user
         setDisplayName(user.displayName || '');
@@ -57,14 +68,13 @@ export default function ProfilePage() {
         setCurrentUserStats(null);
         
         const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
-        if (!hasSeenOnboarding) {
-            setShowOnboarding(true);
-        } else {
+        if (showOnboarding === false && hasSeenOnboarding) {
             setIsNewPlayerDialogOpen(true);
         }
+        
       }
     }
-  }, [user, players, playersLoading]);
+  }, [user, players, playersLoading, showOnboarding]);
 
   const handleSave = async () => {
     if(!user) return;
@@ -304,4 +314,13 @@ export default function ProfilePage() {
     </div>
     </>
   );
+}
+
+
+export default function ProfilePage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <ProfilePageContent />
+        </Suspense>
+    )
 }

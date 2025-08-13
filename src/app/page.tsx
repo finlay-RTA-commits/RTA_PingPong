@@ -33,10 +33,11 @@ export default function LoginPage() {
     try {
       if (action === 'login') {
         await signInWithEmailAndPassword(auth, email, password);
+        router.push('/app/dashboard');
       } else {
         await createUserWithEmailAndPassword(auth, email, password);
+        router.push('/app/profile?new_user=true');
       }
-      router.push('/app/dashboard');
     } catch (error: any) {
       toast({
         variant: 'destructive',
