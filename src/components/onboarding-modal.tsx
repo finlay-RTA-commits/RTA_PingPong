@@ -52,14 +52,14 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]">
-        <DialogHeader className="py-4">
-          <div className="flex justify-center">
-             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
+        <DialogHeader className="text-center">
+          <div className="flex justify-center mb-4">
+             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
               <Rocket className="h-8 w-8" />
             </div>
           </div>
-          <DialogTitle className="text-center text-2xl">Welcome to RTA PingPong!</DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogTitle className="text-2xl">Welcome to RTA PingPong!</DialogTitle>
+          <DialogDescription>
             Here’s a quick tour to get you started.
           </DialogDescription>
         </DialogHeader>
@@ -106,7 +106,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                     Earn badges on your player card by completing challenges!
                     </p>
                     <div className="flex-1 min-h-0 pt-4">
-                        <ScrollArea className="h-full w-full rounded-md border p-4">
+                        <ScrollArea className="h-[250px] w-full rounded-md border p-4">
                             <div className="space-y-4 text-left">
                             {achievements.map((ach) => {
                                 const Icon = achievementIcons[ach.id];
@@ -126,8 +126,8 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                 </div>
                 </CarouselItem>
             </CarouselContent>
-            <CarouselPrevious className="-left-2" />
-            <CarouselNext className="-right-2" />
+            <CarouselPrevious className="absolute -left-2 top-1/2 -translate-y-1/2" />
+            <CarouselNext className="absolute -right-2 top-1/2 -translate-y-1/2" />
             </Carousel>
         </div>
 
