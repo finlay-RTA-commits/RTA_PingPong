@@ -1,6 +1,6 @@
-
 'use client';
 
+import * as React from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogClose,
 } from '@/components/ui/dialog';
 import {
   Carousel,
@@ -18,8 +19,25 @@ import {
 } from '@/components/ui/carousel';
 import { Button } from './ui/button';
 import { achievementData, AchievementId } from '@/lib/types';
-import { Rocket, LayoutDashboard, Trophy, Swords, User, Users, Crown, Flame, Ticket, PartyPopper, Droplet, Shield, Coins, Repeat, Coffee } from 'lucide-react';
+import {
+  Rocket,
+  LayoutDashboard,
+  Trophy,
+  Swords,
+  User,
+  Users,
+  Crown,
+  Flame,
+  Ticket,
+  PartyPopper,
+  Droplet,
+  Shield,
+  Coins,
+  Repeat,
+  Coffee,
+} from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 interface OnboardingModalProps {
   open: boolean;
@@ -51,90 +69,108 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh] p-0">
-        <DialogHeader className="text-center p-6 pb-4">
-          <div className="flex justify-center mb-4">
-             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <Rocket className="h-8 w-8" />
-            </div>
+      <DialogContent className="sm:max-w-xl p-0 flex flex-col max-h-[90vh]">
+        <DialogHeader className="p-6 pb-4 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <Rocket className="h-8 w-8" />
           </div>
-          <DialogTitle className="text-2xl">Welcome to RTA PingPong!</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-2xl font-bold">
+            Welcome to RTA PingPong!
+          </DialogTitle>
+          <DialogDescription className="text-muted-foreground">
             Here’s a quick tour to get you started.
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="flex-1 px-6 min-h-0">
-          <Carousel className="w-full h-full relative">
+
+        <div className="flex-1 min-h-0 px-6">
+          <Carousel className="h-full w-full relative">
             <CarouselContent className="h-full">
-              <CarouselItem className="h-full flex flex-col justify-center items-center">
-                <div className="text-center space-y-4">
-                  <h3 className="font-semibold text-lg">App Navigation</h3>
-                  <p className="text-muted-foreground">
-                    Use the sidebar on the left to navigate through the different sections of the app.
+              {/* Slide 1: Navigation */}
+              <CarouselItem className="flex flex-col items-center justify-center">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold">App Navigation</h3>
+                  <p className="mt-1 text-muted-foreground">
+                    Use the sidebar on the left to hop between sections.
                   </p>
-                  <div className="grid grid-cols-2 gap-4 pt-4 text-left">
-                    {menuItems.map(item => {
-                      const Icon = item.icon;
-                      return (
-                        <div key={item.label} className="flex items-center gap-2 rounded-md border p-3">
-                          <Icon className="h-5 w-5 text-primary"/>
-                          <span>{item.label}</span>
-                        </div>
-                      )
-                    })}
+                  <div className="mx-auto mt-6 grid max-w-sm grid-cols-2 gap-3 sm:grid-cols-3">
+                    {menuItems.map(({ label, icon: Icon }) => (
+                      <div
+                        key={label}
+                        className="rounded-lg border bg-card p-4 text-center shadow-sm"
+                      >
+                        <Icon className="mx-auto h-6 w-6 text-primary" />
+                        <p className="mt-2 text-sm font-medium">{label}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </CarouselItem>
 
-              <CarouselItem className="h-full flex flex-col justify-center items-center">
-                <div className="text-center space-y-4">
-                  <h3 className="font-semibold text-lg">Create Your Player Profile</h3>
-                  <p className="text-muted-foreground">
-                    To start logging games and climbing the leaderboard, you need to create your player profile.
+              {/* Slide 2: Create profile */}
+              <CarouselItem className="flex flex-col items-center justify-center">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold">
+                    Create Your Player Profile
+                  </h3>
+                  <p className="mt-1 text-muted-foreground">
+                    Log games, earn achievements, and climb the board.
                   </p>
-                  <div className="mt-4 rounded-lg border-2 border-primary bg-primary/10 p-4">
-                    <p className="font-semibold">
-                      Click on <span className="text-primary inline-flex items-center gap-1"><User className="h-4 w-4" /> My Profile</span> in the bottom-left corner of the sidebar to add yourself to the player roster.
+                  <div className="mx-auto mt-6 max-w-sm rounded-lg border-2 border-primary/40 bg-primary/10 p-5">
+                    <p className="font-semibold leading-relaxed">
+                      Click on{' '}
+                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-primary/20 px-2 py-1 text-sm text-primary">
+                        <User className="h-4 w-4" /> My Profile
+                      </span>{' '}
+                      in the sidebar to add yourself to the roster.
                     </p>
                   </div>
                 </div>
               </CarouselItem>
 
-              <CarouselItem className="h-full flex flex-col justify-center items-center">
-                <div className="w-full text-center space-y-4 flex flex-col h-full">
-                  <h3 className="font-semibold text-lg">Unlock Achievements</h3>
-                  <p className="text-muted-foreground">
-                    Earn badges on your player card by completing challenges!
-                  </p>
-                  <div className="flex-1 min-h-0 pt-4">
-                    <ScrollArea className="h-full w-full rounded-md border p-4">
-                      <div className="space-y-4 text-left">
-                        {achievements.map((ach) => {
-                          const Icon = achievementIcons[ach.id];
-                          return (
-                            <div key={ach.id} className="flex items-start gap-3">
-                              <Icon className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
-                              <div>
-                                <p className="font-semibold">{ach.name}</p>
-                                <p className="text-sm text-muted-foreground">{ach.description}</p>
+              {/* Slide 3: Achievements */}
+              <CarouselItem className="flex flex-col h-full py-4">
+                 <div className="text-center mb-4">
+                    <h3 className="text-lg font-semibold">Unlock Achievements</h3>
+                    <p className="mt-1 text-muted-foreground">
+                      Earn badges for completing challenges.
+                    </p>
+                 </div>
+                  <div className="flex-1 min-h-0">
+                      <ScrollArea className="h-full w-full rounded-md border">
+                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {achievements.map((ach) => {
+                            const Icon = achievementIcons[ach.id];
+                            return (
+                              <div
+                                key={ach.id}
+                                className="flex items-start gap-4 rounded-lg border p-3"
+                              >
+                                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                  <Icon className="h-5 w-5" />
+                                </div>
+                                <div className="text-left">
+                                  <p className="font-semibold">{ach.name}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {ach.description}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </ScrollArea>
+                            );
+                          })}
+                        </div>
+                      </ScrollArea>
                   </div>
-                </div>
               </CarouselItem>
             </CarouselContent>
-            <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2" />
-            <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2" />
+            <CarouselPrevious className="absolute left-[-1rem] top-1/2 -translate-y-1/2" />
+            <CarouselNext className="absolute right-[-1rem] top-1/2 -translate-y-1/2" />
           </Carousel>
         </div>
 
-        <DialogFooter className="p-6 pt-4">
-          <Button onClick={() => onOpenChange(false)} className="w-full">Got it, let's play!</Button>
+        <DialogFooter className="p-6">
+          <DialogClose asChild>
+            <Button className="w-full">Got it, let’s play!</Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

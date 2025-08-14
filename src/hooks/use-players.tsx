@@ -33,6 +33,16 @@ const calculateExpectedScore = (playerElo: number, opponentElo: number) => {
     return 1 / (1 + Math.pow(10, (opponentElo - playerElo) / 400));
 };
 
+const REPEATABLE_ACHIEVEMENTS: AchievementId[] = [
+    'KING_SLAYER',
+    'HOT_STREAK',
+    'BUTTERFINGERS',
+    'RIVAL_REVENGE',
+    'COIN_FLIP_CHAMPION',
+    'YO_YO',
+    'SHOULD_BE_WORKING',
+];
+
 
 export const PlayerProvider = ({ children }: { children: ReactNode }) => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -146,16 +156,25 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
     const gamesSnapshot = await getDocs(query(collection(db, "games"), orderBy("date", "asc")));
     const allGames = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Game));
 
-    const checkAndGrantAchievement = (player: Player, achievementId: AchievementId) => {
-        if (!player.achievements?.includes(achievementId)) {
+    const checkAndGrantAchievement = (player: Player, achievementId: AchievementId): {newAchievements: AchievementId[], didUnlock: boolean} => {
+        const isRepeatable = REPEATABLE_ACHIEVEMENTS.includes(achievementId);
+        const hasAchievement = player.achievements?.includes(achievementId);
+
+        if (!hasAchievement || isRepeatable) {
             const achievement = achievementData[achievementId];
             toast({
                 title: '🏆 Achievement Unlocked!',
                 description: `${player.name} earned: ${achievement.name}`,
             });
-            return [...(player.achievements || []), achievementId];
+            // For non-repeatable, add it. For repeatable, we don't need to add it multiple times to the array.
+            // The toast notification is the reward. We'll just return the existing achievements.
+            // A better implementation for repeatable might be a separate counter if we wanted to track *how many* times.
+            // For now, we'll just re-award the toast.
+            if (!hasAchievement) {
+                return { newAchievements: [...(player.achievements || []), achievementId], didUnlock: true };
+            }
         }
-        return player.achievements;
+        return { newAchievements: player.achievements || [], didUnlock: false };
     };
     
     // Calculate Elo ranks for achievement check
@@ -237,30 +256,37 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
       const rival = allPlayers.find(p => p.id === rivalId)?.name || 'N/A';
 
       // --- Achievement Checks ---
+      const grant = (achId: AchievementId) => {
+        const result = checkAndGrantAchievement(player, achId);
+        if (result.didUnlock) {
+            newAchievements = result.newAchievements;
+        }
+      }
+
       // KING_SLAYER
       const opponentEloRank = eloSortedPlayers.find(p => p.id === opponentId)?.eloRank;
       if (wonGame && (opponent.rank === 1 || opponentEloRank === 1)) {
-          newAchievements = checkAndGrantAchievement(player, 'KING_SLAYER');
+          grant('KING_SLAYER');
       }
       // HOT_STREAK
       if (newWinStreak >= 5) {
-          newAchievements = checkAndGrantAchievement(player, 'HOT_STREAK');
+          grant('HOT_STREAK');
       }
       // BUTTERFINGERS
       if (newLossStreak >= 5) {
-          newAchievements = checkAndGrantAchievement(player, 'BUTTERFINGERS');
+          grant('BUTTERFINGERS');
       }
       // WELCOME_TO_THE_BIG_LEAGUES
       if(tournamentId) {
-          newAchievements = checkAndGrantAchievement(player, 'WELCOME_TO_THE_BIG_LEAGUES');
+          grant('WELCOME_TO_THE_BIG_LEAGUES');
       }
       // WELCOME_TO_THE_PARTY_PAL
       if(player.wins === 0 && player.losses === 0) {
-          newAchievements = checkAndGrantAchievement(player, 'WELCOME_TO_THE_PARTY_PAL');
+          grant('WELCOME_TO_THE_PARTY_PAL');
       }
       // RIVAL_REVENGE
       if (wonGame && opponent.name === player.stats?.rival) {
-        newAchievements = checkAndGrantAchievement(player, 'RIVAL_REVENGE');
+        grant('RIVAL_REVENGE');
       }
       // COIN_FLIP_CHAMPION
       if (wonGame && ownScore === 2 && opponentScore === 1) {
@@ -271,7 +297,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
               return isWinner && scoresAre2to1;
           });
           if (lastTwoGames.length === 2 && all2to1Wins) {
-            newAchievements = checkAndGrantAchievement(player, 'COIN_FLIP_CHAMPION');
+            grant('COIN_FLIP_CHAMPION');
           }
       }
       // YO_YO
@@ -288,13 +314,13 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
               }
           }
           if (isYoYo) {
-              newAchievements = checkAndGrantAchievement(player, 'YO_YO');
+              grant('YO_YO');
           }
       }
       // SHOULD_BE_WORKING
       const now = new Date();
       if (wonGame && now.getUTCHours() < 11) {
-        newAchievements = checkAndGrantAchievement(player, 'SHOULD_BE_WORKING');
+        grant('SHOULD_BE_WORKING');
       }
 
 
