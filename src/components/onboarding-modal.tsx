@@ -8,7 +8,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import {
   Carousel,
@@ -69,37 +68,50 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl p-0 flex flex-col max-h-[90vh]">
-        <DialogHeader className="p-6 pb-4 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <Rocket className="h-8 w-8" />
+      <DialogContent
+        className={cn(
+          // ✅ keep within viewport & centered with safe edges
+          'w-[min(92vw,720px)] max-h-[90vh] mx-auto p-0 overflow-hidden',
+          'rounded-2xl border bg-background/95 shadow-2xl'
+        )}
+      >
+        {/* ✅ perfectly centered header */}
+        <DialogHeader className="p-8 pb-4 text-center items-center">
+          <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md ring-8 ring-primary/10">
+            <Rocket className="h-8 w-8" aria-hidden />
           </div>
-          <DialogTitle className="text-2xl font-bold">
+          <DialogTitle className="text-2xl font-bold tracking-tight">
             Welcome to RTA PingPong!
           </DialogTitle>
-          <DialogDescription className="text-muted-foreground">
+          <DialogDescription className="text-base text-muted-foreground">
             Here’s a quick tour to get you started.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 px-6">
-          <Carousel className="h-full w-full relative">
-            <CarouselContent className="h-full">
+        {/* ✅ scroll only the middle so the card never exceeds the screen */}
+        <div className="px-6 pb-2 overflow-y-auto max-h-[calc(90vh-200px)]">
+          <Carousel className="w-full">
+            <CarouselContent className="min-h-[360px]">
               {/* Slide 1: Navigation */}
-              <CarouselItem className="flex flex-col items-center justify-center">
-                <div className="text-center">
+              <CarouselItem className="flex h-full items-center justify-center">
+                <div className="w-full text-center">
                   <h3 className="text-lg font-semibold">App Navigation</h3>
                   <p className="mt-1 text-muted-foreground">
                     Use the sidebar on the left to hop between sections.
                   </p>
-                  <div className="mx-auto mt-6 grid max-w-sm grid-cols-2 gap-3 sm:grid-cols-3">
+
+                  <div className="mx-auto mt-6 grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-3 justify-items-center">
                     {menuItems.map(({ label, icon: Icon }) => (
                       <div
                         key={label}
-                        className="rounded-lg border bg-card p-4 text-center shadow-sm"
+                        className="w-full max-w-[200px] rounded-xl border bg-card p-3 text-left shadow-sm transition hover:shadow-md"
                       >
-                        <Icon className="mx-auto h-6 w-6 text-primary" />
-                        <p className="mt-2 text-sm font-medium">{label}</p>
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                            <Icon className="h-4 w-4 text-primary" />
+                          </div>
+                          <span className="text-sm font-medium">{label}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -107,70 +119,82 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
               </CarouselItem>
 
               {/* Slide 2: Create profile */}
-              <CarouselItem className="flex flex-col items-center justify-center">
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold">
-                    Create Your Player Profile
-                  </h3>
+              <CarouselItem className="flex h-full items-center justify-center">
+                <div className="w-full text-center">
+                  <h3 className="text-lg font-semibold">Create Your Player Profile</h3>
                   <p className="mt-1 text-muted-foreground">
                     Log games, earn achievements, and climb the board.
                   </p>
-                  <div className="mx-auto mt-6 max-w-sm rounded-lg border-2 border-primary/40 bg-primary/10 p-5">
+
+                  <div className="mx-auto mt-6 max-w-xl rounded-2xl border-2 border-primary/40 bg-primary/10 p-5">
                     <p className="font-semibold leading-relaxed">
                       Click on{' '}
-                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-primary/20 px-2 py-1 text-sm text-primary">
+                      <span className="inline-flex items-center gap-1 text-primary">
                         <User className="h-4 w-4" /> My Profile
                       </span>{' '}
-                      in the sidebar to add yourself to the roster.
+                      in the bottom-left of the sidebar to add yourself to the roster.
                     </p>
                   </div>
                 </div>
               </CarouselItem>
 
               {/* Slide 3: Achievements */}
-              <CarouselItem className="flex flex-col h-full py-4">
-                 <div className="text-center mb-4">
-                    <h3 className="text-lg font-semibold">Unlock Achievements</h3>
-                    <p className="mt-1 text-muted-foreground">
-                      Earn badges for completing challenges.
-                    </p>
-                 </div>
-                  <div className="flex-1 min-h-0">
-                      <ScrollArea className="h-full w-full rounded-md border">
-                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {achievements.map((ach) => {
-                            const Icon = achievementIcons[ach.id];
-                            return (
-                              <div
-                                key={ach.id}
-                                className="flex items-start gap-4 rounded-lg border p-3"
-                              >
-                                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                  <Icon className="h-5 w-5" />
-                                </div>
-                                <div className="text-left">
-                                  <p className="font-semibold">{ach.name}</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    {ach.description}
-                                  </p>
-                                </div>
+              <CarouselItem className="flex h-full items-center justify-center">
+                <div className="w-full text-center">
+                  <h3 className="text-lg font-semibold">Unlock Achievements</h3>
+                  <p className="mt-1 text-muted-foreground">
+                    Earn badges on your player card by completing challenges.
+                  </p>
+
+                  <div className="mx-auto mt-5 max-w-2xl pb-2">
+                    <ScrollArea className="h-[300px] w-full rounded-xl border">
+                      <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 pb-4">
+                        {achievements.map((ach) => {
+                          const Icon = achievementIcons[ach.id];
+                          return (
+                            <div
+                              key={ach.id}
+                              className="flex gap-3 rounded-xl bg-card p-3 shadow-sm ring-1 ring-border/60 min-h-[90px]"
+                            >
+                              <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                                <Icon className="h-5 w-5 text-primary" />
                               </div>
-                            );
-                          })}
-                        </div>
-                      </ScrollArea>
+                              <div className="text-left">
+                                <p className="font-semibold leading-tight">
+                                  {ach.name}
+                                </p>
+                                <p className="mt-0.5 text-sm text-muted-foreground">
+                                  {ach.description}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
                   </div>
+                </div>
               </CarouselItem>
             </CarouselContent>
-            <CarouselPrevious className="absolute left-[-1rem] top-1/2 -translate-y-1/2" />
-            <CarouselNext className="absolute right-[-1rem] top-1/2 -translate-y-1/2" />
+
+            <CarouselPrevious
+              className="left-2 top-1/2 -translate-y-1/2 rounded-full border bg-background/90 shadow-sm backdrop-blur"
+              aria-label="Previous"
+            />
+            <CarouselNext
+              className="right-2 top-1/2 -translate-y-1/2 rounded-full border bg-background/90 shadow-sm backdrop-blur"
+              aria-label="Next"
+            />
           </Carousel>
         </div>
 
-        <DialogFooter className="p-6">
-          <DialogClose asChild>
-            <Button className="w-full">Got it, let’s play!</Button>
-          </DialogClose>
+        <DialogFooter className="p-6 pt-4">
+          <Button
+            onClick={() => onOpenChange(false)}
+            className="h-11 w-full rounded-xl text-base font-semibold shadow-md"
+          >
+            Got it, let’s play!
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
