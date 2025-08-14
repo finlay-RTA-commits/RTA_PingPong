@@ -155,23 +155,6 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
     // Fetch all games to calculate other stats
     const gamesSnapshot = await getDocs(query(collection(db, "games"), orderBy("date", "asc")));
     const allGames = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Game));
-
-    const checkAndGrantAchievement = (player: Player, achievementId: AchievementId): {newAchievements: AchievementId[], didUnlock: boolean} => {
-        const isRepeatable = REPEATABLE_ACHIEVEMENTS.includes(achievementId);
-        const hasAchievement = player.achievements?.includes(achievementId);
-
-        if (!hasAchievement || isRepeatable) {
-            const achievement = achievementData[achievementId];
-            toast({
-                title: '🏆 Achievement Unlocked!',
-                description: `${player.name} earned: ${achievement.name}`,
-            });
-            if (!hasAchievement) {
-                return { newAchievements: [...(player.achievements || []), achievementId], didUnlock: true };
-            }
-        }
-        return { newAchievements: player.achievements || [], didUnlock: false };
-    };
     
     // Calculate Elo ranks for achievement check
     const eloSortedPlayers = [...allPlayers]
@@ -182,7 +165,25 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
     const processPlayer = (player: Player, ownScore: number, opponentScore: number, opponent: Player, newElo: number) => {
       const playerRef = doc(db, "players", player.id);
       const wonGame = ownScore > opponentScore;
-      let newAchievements = [...(player.achievements || [])];
+      
+      let newAchievementsThisMatch: AchievementId[] = [];
+      
+      const grant = (achId: AchievementId) => {
+        const isRepeatable = REPEATABLE_ACHIEVEMENTS.includes(achId);
+        const hasAchievement = (player.achievements || []).includes(achId);
+
+        if (!hasAchievement || isRepeatable) {
+            // Add to the list of achievements gained THIS match to avoid duplicates
+            if (!newAchievementsThisMatch.includes(achId)) {
+                const achievement = achievementData[achId];
+                toast({
+                    title: '🏆 Achievement Unlocked!',
+                    description: `${player.name} earned: ${achievement.name}`,
+                });
+                newAchievementsThisMatch.push(achId);
+            }
+        }
+      };
 
       // Calculate wins and losses
       const newWins = player.wins + (wonGame ? 1 : 0);
@@ -195,7 +196,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
       const playerGames = [
           ...allGames.filter(g => g.player1Id === player.id || g.player2Id === player.id),
           // Add the current game to the list for calculation
-          { player1Id, player2Id, score1, score2, date: new Date().toISOString(), id: 'current', tournamentId: null }
+          { player1Id, player2Id, score1, score2, date: new Date().toISOString(), id: 'current', tournamentId: tournamentId }
       ].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
       // Calculate highest streak
@@ -235,13 +236,6 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
       const rivalName = allPlayers.find(p => p.id === rivalId)?.name || 'N/A';
 
       // --- Achievement Checks ---
-      const grant = (achId: AchievementId) => {
-        const result = checkAndGrantAchievement(player, achId);
-        if (result.didUnlock) {
-            newAchievements = result.newAchievements;
-        }
-      }
-      
       const wasFirstGame = player.wins === 0 && player.losses === 0;
       const wasFirstTournamentGame = tournamentId && !allGames.some(g => (g.player1Id === player.id || g.player2Id === player.id) && g.tournamentId);
 
@@ -303,12 +297,13 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
         grant('SHOULD_BE_WORKING');
       }
 
+      const finalAchievements = [...(player.achievements || []), ...newAchievementsThisMatch.filter(ach => !(player.achievements || []).includes(ach))];
 
       // Update batch
       batch.update(playerRef, {
         wins: newWins,
         losses: newLosses,
-        achievements: newAchievements,
+        achievements: finalAchievements,
         stats: {
           winStreak: newWinStreak,
           lossStreak: newLossStreak,
