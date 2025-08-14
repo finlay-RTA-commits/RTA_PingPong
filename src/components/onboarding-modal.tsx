@@ -70,12 +70,10 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          // ✅ keep within viewport & centered with safe edges
           'w-[min(92vw,720px)] max-h-[90vh] mx-auto p-0 overflow-hidden',
           'rounded-2xl border bg-background/95 shadow-2xl'
         )}
       >
-        {/* ✅ perfectly centered header */}
         <DialogHeader className="p-8 pb-4 text-center items-center">
           <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md ring-8 ring-primary/10">
             <Rocket className="h-8 w-8" aria-hidden />
@@ -88,7 +86,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        {/* ✅ scroll only the middle so the card never exceeds the screen */}
+        {/* Middle content scrolls so the modal never exceeds the screen */}
         <div className="px-6 pb-2 overflow-y-auto max-h-[calc(90vh-200px)]">
           <Carousel className="w-full">
             <CarouselContent className="min-h-[360px]">
@@ -154,10 +152,10 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                           return (
                             <div
                               key={ach.id}
-                              className="flex gap-3 rounded-xl bg-card p-3 shadow-sm ring-1 ring-border/60 min-h-[90px]"
+                              className="flex gap-2 rounded-xl bg-card px-3 py-2 shadow-sm ring-1 ring-border/60 min-h-[80px]" // tightened padding
                             >
-                              <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                                <Icon className="h-5 w-5 text-primary" />
+                              <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                                <Icon className="h-4 w-4 text-primary" />
                               </div>
                               <div className="text-left">
                                 <p className="font-semibold leading-tight">
