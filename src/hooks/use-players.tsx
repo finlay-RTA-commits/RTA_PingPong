@@ -166,10 +166,6 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
                 title: '🏆 Achievement Unlocked!',
                 description: `${player.name} earned: ${achievement.name}`,
             });
-            // For non-repeatable, add it. For repeatable, we don't need to add it multiple times to the array.
-            // The toast notification is the reward. We'll just return the existing achievements.
-            // A better implementation for repeatable might be a separate counter if we wanted to track *how many* times.
-            // For now, we'll just re-award the toast.
             if (!hasAchievement) {
                 return { newAchievements: [...(player.achievements || []), achievementId], didUnlock: true };
             }
@@ -183,12 +179,8 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
       .map((p, index) => ({ ...p, eloRank: index + 1 }));
 
 
-    const processPlayer = (playerId: string, ownScore: number, opponentScore: number, opponentId: string, newElo: number) => {
-      const player = allPlayers.find(p => p.id === playerId);
-      let opponent = allPlayers.find(p => p.id === opponentId);
-      if (!player || !opponent) return;
-
-      const playerRef = doc(db, "players", playerId);
+    const processPlayer = (player: Player, ownScore: number, opponentScore: number, opponent: Player, newElo: number) => {
+      const playerRef = doc(db, "players", player.id);
       const wonGame = ownScore > opponentScore;
       let newAchievements = [...(player.achievements || [])];
 
@@ -201,29 +193,16 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
 
       // Get all games for this player, including the one just played
       const playerGames = [
-          ...allGames.filter(g => g.player1Id === playerId || g.player2Id === playerId),
+          ...allGames.filter(g => g.player1Id === player.id || g.player2Id === player.id),
           // Add the current game to the list for calculation
           { player1Id, player2Id, score1, score2, date: new Date().toISOString(), id: 'current', tournamentId: null }
       ].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-
-      // Calculate current win streak (legacy)
-      let currentStreak = 0;
-      for (let i = playerGames.length - 1; i >= 0; i--) {
-        const game = playerGames[i];
-        const isWinner = (game.player1Id === playerId && game.score1 > game.score2) || (game.player2Id === playerId && game.score2 > game.score1);
-        if (isWinner) {
-          currentStreak++;
-        } else {
-          break; // Streak broken
-        }
-      }
 
       // Calculate highest streak
       let maxStreak = 0;
       let tempStreak = 0;
       for (const game of playerGames) {
-          const isWinner = (game.player1Id === playerId && game.score1 > game.score2) || (game.player2Id === playerId && game.score2 > game.score1);
+          const isWinner = (game.player1Id === player.id && game.score1 > game.score2) || (game.player2Id === player.id && game.score2 > game.score1);
           if (isWinner) {
               tempStreak++;
           } else {
@@ -240,8 +219,8 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
 
       // Calculate rival
       const opponentCounts = playerGames.reduce((acc, game) => {
-          const gameOpponent = game.player1Id === playerId ? game.player2Id : game.player1Id;
-          acc[gameOpponent] = (acc[gameOpponent] || 0) + 1;
+          const gameOpponentId = game.player1Id === player.id ? game.player2Id : game.player1Id;
+          acc[gameOpponentId] = (acc[gameOpponentId] || 0) + 1;
           return acc;
       }, {} as Record<string, number>);
 
@@ -253,7 +232,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
               rivalId = o;
           }
       }
-      const rival = allPlayers.find(p => p.id === rivalId)?.name || 'N/A';
+      const rivalName = allPlayers.find(p => p.id === rivalId)?.name || 'N/A';
 
       // --- Achievement Checks ---
       const grant = (achId: AchievementId) => {
@@ -262,9 +241,22 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
             newAchievements = result.newAchievements;
         }
       }
+      
+      const wasFirstGame = player.wins === 0 && player.losses === 0;
+      const wasFirstTournamentGame = tournamentId && !allGames.some(g => (g.player1Id === player.id || g.player2Id === player.id) && g.tournamentId);
 
+      // WELCOME_TO_THE_PARTY_PAL
+      if (wasFirstGame) {
+          grant('WELCOME_TO_THE_PARTY_PAL');
+      }
+
+      // WELCOME_TO_THE_BIG_LEAGUES
+      if (wasFirstTournamentGame) {
+          grant('WELCOME_TO_THE_BIG_LEAGUES');
+      }
+      
       // KING_SLAYER
-      const opponentEloRank = eloSortedPlayers.find(p => p.id === opponentId)?.eloRank;
+      const opponentEloRank = eloSortedPlayers.find(p => p.id === opponent.id)?.eloRank;
       if (wonGame && (opponent.rank === 1 || opponentEloRank === 1)) {
           grant('KING_SLAYER');
       }
@@ -276,27 +268,16 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
       if (newLossStreak >= 5) {
           grant('BUTTERFINGERS');
       }
-      // WELCOME_TO_THE_BIG_LEAGUES
-      if(tournamentId) {
-          grant('WELCOME_TO_THE_BIG_LEAGUES');
-      }
-      // WELCOME_TO_THE_PARTY_PAL
-      if(player.wins === 0 && player.losses === 0) {
-          grant('WELCOME_TO_THE_PARTY_PAL');
-      }
       // RIVAL_REVENGE
       if (wonGame && opponent.name === player.stats?.rival) {
         grant('RIVAL_REVENGE');
       }
       // COIN_FLIP_CHAMPION
       if (wonGame && ownScore === 2 && opponentScore === 1) {
-          const lastTwoGames = playerGames.slice(-3, -1);
-          const all2to1Wins = lastTwoGames.every(g => {
-              const isWinner = (g.player1Id === playerId && g.score1 > g.score2) || (g.player2Id === playerId && g.score2 > g.score1);
-              const scoresAre2to1 = (g.player1Id === playerId && g.score1 === 2 && g.score2 === 1) || (g.player2Id === playerId && g.score2 === 2 && g.score1 === 1);
-              return isWinner && scoresAre2to1;
-          });
-          if (lastTwoGames.length === 2 && all2to1Wins) {
+          const lastThreeWins = playerGames.filter(g => 
+             ((g.player1Id === player.id && g.score1 === 2 && g.score2 === 1) || (g.player2Id === player.id && g.score2 === 2 && g.score1 === 1))
+          ).slice(-3);
+          if (lastThreeWins.length === 3) {
             grant('COIN_FLIP_CHAMPION');
           }
       }
@@ -304,10 +285,9 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
       const last6Games = playerGames.slice(-6);
       if (last6Games.length === 6) {
           let isYoYo = true;
-          const firstGameWon = (last6Games[0].player1Id === playerId && last6Games[0].score1 > last6Games[0].score2) || (last6Games[0].player2Id === playerId && last6Games[0].score2 > last6Games[0].score1);
           for (let i = 1; i < last6Games.length; i++) {
-              const currentGameWon = (last6Games[i].player1Id === playerId && last6Games[i].score1 > last6Games[i].score2) || (last6Games[i].player2Id === playerId && last6Games[i].score2 > last6Games[i].score1);
-              const prevGameWon = (last6Games[i-1].player1Id === playerId && last6Games[i-1].score1 > last6Games[i-1].score2) || (last6Games[i-1].player2Id === playerId && last6Games[i-1].score2 > last6Games[i-1].score1);
+              const currentGameWon = (last6Games[i].player1Id === player.id && last6Games[i].score1 > last6Games[i].score2) || (last6Games[i].player2Id === player.id && last6Games[i].score2 > last6Games[i].score1);
+              const prevGameWon = (last6Games[i-1].player1Id === player.id && last6Games[i-1].score1 > last6Games[i-1].score2) || (last6Games[i-1].player2Id === player.id && last6Games[i-1].score2 > last6Games[i-1].score1);
               if (currentGameWon === prevGameWon) {
                   isYoYo = false;
                   break;
@@ -333,14 +313,14 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
           winStreak: newWinStreak,
           lossStreak: newLossStreak,
           highestStreak: highestStreak,
-          rival: rival,
+          rival: rivalName,
           elo: newElo,
         }
       });
     };
 
-    processPlayer(player1Id, score1, score2, player2Id, newPlayer1Elo);
-    processPlayer(player2Id, score2, score1, player1Id, newPlayer2Elo);
+    processPlayer(player1, score1, score2, player2, newPlayer1Elo);
+    processPlayer(player2, score2, score1, player1, newPlayer2Elo);
 
     try {
       await batch.commit();
