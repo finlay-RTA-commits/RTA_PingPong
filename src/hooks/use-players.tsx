@@ -19,12 +19,6 @@ interface PlayerContextType {
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
-const reRankPlayers = (players: Player[]): Player[] => {
-    return players
-        .sort((a,b) => b.wins - a.wins)
-        .map((p, index) => ({...p, rank: index + 1}));
-}
-
 // Elo Calculation Constants
 const K_FACTOR = 32;
 const DEFAULT_ELO = 1000;
@@ -58,7 +52,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
       querySnapshot.forEach((doc) => {
         playersData.push({ id: doc.id, ...doc.data() } as Player);
       });
-      setPlayers(reRankPlayers(playersData));
+      setPlayers(playersData);
       setLoading(false);
     }, (error) => {
         console.error("Error fetching players:", error);
@@ -85,7 +79,6 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
             name,
             avatar,
             email,
-            rank: 99, // Rank will be recalculated on the next snapshot
             wins: 0,
             losses: 0,
             stats: {
@@ -173,13 +166,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
         const hasAchievement = (player.achievements || []).includes(achId);
 
         if (!hasAchievement || isRepeatable) {
-            // Add to the list of achievements gained THIS match to avoid duplicates
             if (!newAchievementsThisMatch.includes(achId)) {
-                const achievement = achievementData[achId];
-                toast({
-                    title: '🏆 Achievement Unlocked!',
-                    description: `${player.name} earned: ${achievement.name}`,
-                });
                 newAchievementsThisMatch.push(achId);
             }
         }
@@ -195,7 +182,6 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
       // Get all games for this player, including the one just played
       const playerGames = [
           ...allGames.filter(g => g.player1Id === player.id || g.player2Id === player.id),
-          // Add the current game to the list for calculation
           { player1Id, player2Id, score1, score2, date: new Date().toISOString(), id: 'current', tournamentId: tournamentId }
       ].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -239,34 +225,25 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
       const wasFirstGame = player.wins === 0 && player.losses === 0;
       const wasFirstTournamentGame = tournamentId && !allGames.some(g => (g.player1Id === player.id || g.player2Id === player.id) && g.tournamentId);
 
-      // WELCOME_TO_THE_PARTY_PAL
       if (wasFirstGame) {
           grant('WELCOME_TO_THE_PARTY_PAL');
       }
-
-      // WELCOME_TO_THE_BIG_LEAGUES
       if (wasFirstTournamentGame) {
           grant('WELCOME_TO_THE_BIG_LEAGUES');
       }
-      
-      // KING_SLAYER
       const opponentEloRank = eloSortedPlayers.find(p => p.id === opponent.id)?.eloRank;
-      if (wonGame && (opponent.rank === 1 || opponentEloRank === 1)) {
+      if (wonGame && opponentEloRank === 1) {
           grant('KING_SLAYER');
       }
-      // HOT_STREAK
       if (newWinStreak >= 5) {
           grant('HOT_STREAK');
       }
-      // BUTTERFINGERS
       if (newLossStreak >= 5) {
           grant('BUTTERFINGERS');
       }
-      // RIVAL_REVENGE
       if (wonGame && opponent.name === player.stats?.rival) {
         grant('RIVAL_REVENGE');
       }
-      // COIN_FLIP_CHAMPION
       if (wonGame && ownScore === 2 && opponentScore === 1) {
           const lastThreeWins = playerGames.filter(g => 
              ((g.player1Id === player.id && g.score1 === 2 && g.score2 === 1) || (g.player2Id === player.id && g.score2 === 2 && g.score1 === 1))
@@ -275,7 +252,6 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
             grant('COIN_FLIP_CHAMPION');
           }
       }
-      // YO_YO
       const last6Games = playerGames.slice(-6);
       if (last6Games.length === 6) {
           let isYoYo = true;
@@ -291,13 +267,20 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
               grant('YO_YO');
           }
       }
-      // SHOULD_BE_WORKING
       const now = new Date();
       if (wonGame && now.getUTCHours() < 11) {
         grant('SHOULD_BE_WORKING');
       }
 
       const finalAchievements = [...(player.achievements || []), ...newAchievementsThisMatch.filter(ach => !(player.achievements || []).includes(ach))];
+      
+      newAchievementsThisMatch.forEach(achId => {
+        const achievement = achievementData[achId];
+        toast({
+            title: '🏆 Achievement Unlocked!',
+            description: `${player.name} earned: ${achievement.name}`,
+        });
+      })
 
       // Update batch
       batch.update(playerRef, {

@@ -73,11 +73,8 @@ function DashboardPageContent() {
 
   const handleOnboardingFinish = () => {
     setShowOnboarding(false);
-    if (typeof window !== 'undefined') {
-        localStorage.setItem('hasSeenOnboarding', 'true');
-        // Clean the URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
+    // Clean the URL
+    window.history.replaceState({}, document.title, window.location.pathname);
   };
   
   useEffect(() => {
@@ -185,11 +182,7 @@ function DashboardPageContent() {
 
   return (
     <>
-    <OnboardingModal open={showOnboarding} onOpenChange={(open) => {
-        if (!open) {
-            handleOnboardingFinish();
-        }
-    }} />
+    <OnboardingModal open={showOnboarding} onOpenChange={setShowOnboarding} onFinish={handleOnboardingFinish} />
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <Card className="lg:col-span-1 flex flex-col">
         <CardHeader>
@@ -197,7 +190,7 @@ function DashboardPageContent() {
             <Trophy className="text-primary" />
             Leaderboard
           </CardTitle>
-          <CardDescription>Top 5 players.</CardDescription>
+          <CardDescription>Top 5 players by wins.</CardDescription>
         </CardHeader>
         <CardContent className="flex-grow">
           <Table>
@@ -209,23 +202,25 @@ function DashboardPageContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {players.slice(0, 5).map((player) => (
+              {players.slice(0, 5).map((player, index) => {
+                const rank = index + 1;
+                return (
                 <TableRow key={player.id}>
                   <TableCell className="text-center font-bold text-lg">
-                     {player.rank === 1 ? (
+                     {rank === 1 ? (
                       <span className="inline-block -rotate-[35deg]">👑</span>
-                    ) : player.rank === 2 ? (
+                    ) : rank === 2 ? (
                       <span>🥈</span>
-                    ) : player.rank === 3 ? (
+                    ) : rank === 3 ? (
                       <span>🥉</span>
                     ) : (
-                      player.rank
+                      rank
                     )}
                   </TableCell>
                   <TableCell>{player.name}</TableCell>
                   <TableCell>{player.wins}</TableCell>
                 </TableRow>
-              ))}
+              )})}
             </TableBody>
           </Table>
         </CardContent>
@@ -440,5 +435,3 @@ export default function DashboardPage() {
         </Suspense>
     )
 }
-
-    

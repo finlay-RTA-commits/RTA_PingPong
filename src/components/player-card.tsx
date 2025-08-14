@@ -1,4 +1,5 @@
 
+import { useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -8,6 +9,7 @@ import { Button } from './ui/button';
 import { achievementData, Achievement, AchievementId } from '@/lib/types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { usePlayers } from '@/hooks/use-players';
 
 interface PlayerCardProps {
   player: Player;
@@ -59,7 +61,14 @@ const AchievementBadge = ({ achievement }: { achievement: Achievement }) => {
 
 
 export function PlayerCard({ player }: PlayerCardProps) {
+  const { players } = usePlayers();
   const winRate = player.wins + player.losses > 0 ? ((player.wins / (player.wins + player.losses)) * 100).toFixed(0) : 0;
+  
+  const rank = useMemo(() => {
+    const sortedPlayers = [...players].sort((a,b) => b.wins - a.wins);
+    const playerIndex = sortedPlayers.findIndex(p => p.id === player.id);
+    return playerIndex !== -1 ? playerIndex + 1 : null;
+  }, [player, players]);
   
   const generateGmailLink = () => {
     if (!player.email) return undefined;
@@ -95,7 +104,7 @@ export function PlayerCard({ player }: PlayerCardProps) {
                   <Trophy className="h-6 w-6 text-amber-400" />
                 ) : null}
               </CardTitle>
-              <p className="font-semibold text-muted-foreground">Rank: #{player.rank}</p>
+              {rank && <p className="font-semibold text-muted-foreground">Rank: #{rank}</p>}
             </div>
           </div>
         </div>

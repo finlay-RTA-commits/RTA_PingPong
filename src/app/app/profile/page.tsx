@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -129,6 +129,13 @@ function ProfilePageContent() {
   const totalGames = currentUserStats ? currentUserStats.wins + currentUserStats.losses : 0;
   const winRate = totalGames > 0 ? ((currentUserStats!.wins / totalGames) * 100).toFixed(1) : "0";
 
+  const rank = useMemo(() => {
+    if (!currentUserStats) return null;
+    const sortedPlayers = [...players].sort((a,b) => b.wins - a.wins);
+    const playerIndex = sortedPlayers.findIndex(p => p.id === currentUserStats.id);
+    return playerIndex !== -1 ? playerIndex + 1 : null;
+  }, [currentUserStats, players]);
+
   if (authLoading || playersLoading) {
       return (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -247,7 +254,7 @@ function ProfilePageContent() {
               <>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Current Rank</span>
-                  <span className="font-bold text-primary text-2xl">#{currentUserStats.rank}</span>
+                  <span className="font-bold text-primary text-2xl">#{rank ?? 'N/A'}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between">

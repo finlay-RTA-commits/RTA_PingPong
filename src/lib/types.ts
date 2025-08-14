@@ -6,7 +6,6 @@ export type Player = {
   uid?: string; // Firebase Auth User ID
   name: string;
   email?: string; // Player's email for invites
-  rank: number;
   wins: number;
   losses: number;
   avatar: string;
@@ -47,7 +46,7 @@ export type Tournament = {
 // === Gamification Types ===
 
 export const achievementData = {
-  KING_SLAYER: { id: 'KING_SLAYER', name: 'King Slayer', description: 'Defeat the #1 ranked player.', icon: 'Crown' },
+  KING_SLAYER: { id: 'KING_SLAYER', name: 'King Slayer', description: 'Defeat the #1 Elo-rated player.', icon: 'Crown' },
   HOT_STREAK: { id: 'HOT_STREAK', name: 'Hot Streak', description: 'Win 5 games in a row.', icon: 'Flame' },
   BUTTERFINGERS: { id: 'BUTTERFINGERS', name: 'Butterfingers', description: 'Lose 5 games in a row.', icon: 'Droplet' },
   WELCOME_TO_THE_BIG_LEAGUES: { id: 'WELCOME_TO_THE_BIG_LEAGUES', name: 'Welcome to the Big Leagues', description: 'Play your first tournament match.', icon: 'Ticket' },

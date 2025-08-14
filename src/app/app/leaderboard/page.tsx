@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Card,
@@ -21,7 +21,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, BarChart } from "lucide-react";
 import { usePlayers } from "@/hooks/use-players";
-import type { Player } from "@/lib/types";
 
 export default function LeaderboardPage() {
   const { players } = usePlayers();
@@ -30,6 +29,10 @@ export default function LeaderboardPage() {
     return [...players]
       .sort((a, b) => (b.stats?.elo ?? 0) - (a.stats?.elo ?? 0))
       .map((p, index) => ({ ...p, eloRank: index + 1 }));
+  }, [players]);
+
+  const winSortedPlayers = useMemo(() => {
+    return players.map((p, index) => ({ ...p, rank: index + 1 }));
   }, [players]);
 
   return (
@@ -65,7 +68,7 @@ export default function LeaderboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {players.map((player) => (
+                {winSortedPlayers.map((player) => (
                     <TableRow key={player.id}>
                       <TableCell className="w-[80px] text-center text-lg font-bold">
                         {player.rank === 1 ? (
@@ -146,4 +149,3 @@ export default function LeaderboardPage() {
     </Card>
   );
 }
-
